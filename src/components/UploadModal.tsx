@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -169,8 +170,23 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       }
     } catch (err: any) {
       console.error('Snapchat scan failed:', err);
-      Alert.alert('Camera Roll Permission', err?.message || 'Could not scan camera roll for Snapchat videos.');
+      Alert.alert(
+        'Media Permission Required',
+        err?.message || 'Loopt needs access to your photos and videos to find and import Snapchat clips.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Settings',
+            onPress: () => {
+              Linking.openSettings().catch(() => {
+                Alert.alert('Settings', 'Please manually open your device Settings > Apps > Loopt > Permissions and enable Photos & Videos.');
+              });
+            },
+          },
+        ]
+      );
     } finally {
+
       setIsImportingSnapchat(false);
     }
   };

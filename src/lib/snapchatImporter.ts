@@ -58,7 +58,7 @@ export async function importSnapchatVideos(
     perm = await MediaLibrary.requestPermissionsAsync();
   }
   if (!perm.granted) {
-    throw new Error('Permission to access photos and videos was not granted. Please allow access in Android Settings > Apps > Loopt > Permissions.');
+    throw new Error('Permission to access photos and videos was denied. Tap "Open Settings" below to allow access in Android App Permissions.');
   }
 
   const alreadyImported = await getImportedAssetIds();
