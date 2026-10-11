@@ -90,7 +90,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               <View style={styles.titleWithIcon}>
                 <Ionicons name="cloud-download-outline" size={22} color="#FF0000" />
                 <Text style={[styles.title, !isDarkMode && styles.titleLight]}>
-                  App Updates & GitHub Sync
+                  Loopr Updates & GitHub Sync
                 </Text>
               </View>
               <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

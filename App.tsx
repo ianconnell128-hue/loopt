@@ -105,8 +105,8 @@ function MainScreen() {
             {/* Top Bar Floating Header */}
             <View style={[styles.topHeader, { top: insets.top + 6 }]}>
               <View style={styles.topHeaderLeft}>
-                <Ionicons name="logo-youtube" size={26} color="#FF0000" />
-                <Text style={styles.appTitle}>Shorts</Text>
+                <Ionicons name="repeat" size={24} color="#FF0055" />
+                <Text style={styles.appTitle}>Loopr</Text>
                 <View style={styles.userTagPill}>
                   <Text style={styles.userTagText}>{profile.username}</Text>
                 </View>

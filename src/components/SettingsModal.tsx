@@ -187,7 +187,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Text style={styles.sectionHeading}>ABOUT</Text>
             <View style={[styles.infoCard, !isDark && styles.infoCardLight]}>
               <Text style={[styles.infoCardText, !isDark && styles.infoCardTextLight]}>
-                Shorts App v1.0 • Single Creator Edition
+                Loopr v1.0 • Single Creator Edition
               </Text>
               <Text style={styles.infoCardSubText}>Channel Owner: @ian</Text>
             </View>

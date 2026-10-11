@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "shorts-app",
-    "slug": "shorts-app",
+    "name": "Loopr",
+    "slug": "loopr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

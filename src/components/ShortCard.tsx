@@ -35,7 +35,8 @@ export const ShortCard: React.FC<ShortCardProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
-  const [contentFitMode, setContentFitMode] = useState<'cover' | 'contain'>('cover');
+  const [contentFitMode, setContentFitMode] = useState<'cover' | 'contain'>('contain');
+  const [isVideoLandscape, setIsVideoLandscape] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<boolean>(false);
 
   // Double-tap heart animation
@@ -47,6 +48,42 @@ export const ShortCard: React.FC<ShortCardProps> = ({
     p.loop = true;
     p.muted = false;
   });
+
+  // Listen to video track & source metadata to detect aspect ratio
+  useEffect(() => {
+    const handleTracks = (tracks: any[]) => {
+      if (tracks && tracks.length > 0) {
+        const primary = tracks[0];
+        if (primary?.size?.width && primary?.size?.height) {
+          const isLandscape = primary.size.width > primary.size.height;
+          setIsVideoLandscape(isLandscape);
+          setContentFitMode(isLandscape ? 'contain' : 'cover');
+        }
+      }
+    };
+
+    const sub1 = player.addListener('sourceLoad', (payload: any) => {
+      if (payload?.availableVideoTracks) {
+        handleTracks(payload.availableVideoTracks);
+      }
+    });
+
+    const sub2 = player.addListener('videoTrackChange', (payload: any) => {
+      if (payload?.videoTrack?.size) {
+        const { width, height } = payload.videoTrack.size;
+        if (width && height) {
+          const isLandscape = width > height;
+          setIsVideoLandscape(isLandscape);
+          setContentFitMode(isLandscape ? 'contain' : 'cover');
+        }
+      }
+    });
+
+    return () => {
+      sub1.remove();
+      sub2.remove();
+    };
+  }, [player]);
 
   // Play / pause automatically based on viewport presence
   useEffect(() => {
