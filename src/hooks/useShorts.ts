@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ShortVideo, UserProfile, CommentItem } from '../types';
 import { INITIAL_VIDEOS, USER_DEFAULT_PROFILE } from '../data/sampleVideos';
@@ -142,14 +142,14 @@ function shuffleArray<T>(array: T[]): T[] {
     } finally {
       setLoading(false);
     }
-  }, [profile]);
-
+  }, []);
 
   useEffect(() => {
     loadSettings();
     loadProfile();
     loadVideos();
   }, [loadSettings, loadProfile, loadVideos]);
+
 
   // Toggle Like with REAL integers
   const toggleLike = useCallback(
@@ -317,9 +317,18 @@ function shuffleArray<T>(array: T[]): T[] {
   };
 
   // Infinite scroll generator: shuffles a new batch of videos with unique IDs and appends them
+  const isAppendingRef = useRef(false);
+
   const appendMoreShuffledVideos = useCallback(() => {
+    if (isAppendingRef.current) return;
+    isAppendingRef.current = true;
+
     setVideos((prev) => {
-      if (prev.length === 0) return prev;
+      // Don't duplicate if less than 2 videos or already large list
+      if (prev.length === 0 || prev.length > 50) {
+        isAppendingRef.current = false;
+        return prev;
+      }
       // Extract unique base videos from existing list
       const uniqueMap = new Map<string, ShortVideo>();
       for (const v of prev) {
@@ -331,12 +340,17 @@ function shuffleArray<T>(array: T[]): T[] {
       const pool = Array.from(uniqueMap.values());
       const shuffledBatch = shuffleArray(pool).map((v) => ({
         ...v,
-        // assign a fresh instance ID so FlatList keys are unique and player tracks correctly
         id: `${v.id}_loop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       }));
+
+      setTimeout(() => {
+        isAppendingRef.current = false;
+      }, 500);
+
       return [...prev, ...shuffledBatch];
     });
   }, []);
+
 
   return {
     profile,
