@@ -1,95 +1,173 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ChatConversation, ChatMessage } from '../types';
+import { ChatConversation, ChatMessage, UserContact, FriendRequest } from '../types';
 import { sendLocalMessageNotification } from './notificationService';
 
-const CONVERSATIONS_KEY = '@loopt_chat_conversations_v1';
-const MESSAGES_PREFIX = '@loopt_chat_messages_v1_';
+const CONVERSATIONS_KEY = '@loopt_chat_conversations_v2';
+const MESSAGES_PREFIX = '@loopt_chat_messages_v2_';
+const CONTACTS_KEY = '@loopt_chat_contacts_v2';
+const FRIEND_REQUESTS_KEY = '@loopt_friend_requests_v2';
 
-export const INITIAL_CONVERSATIONS: ChatConversation[] = [
+// Discoverable network directory of users that can be searched by username
+export const DISCOVERABLE_USERS: UserContact[] = [
   {
-    id: 'conv-creator-1',
-    participantId: 'creator-alex',
-    participantName: 'Alex Rivera',
-    participantAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-    lastMessage: 'Yo! Did you see the new Loopt clip?',
-    lastMessageTime: '10:45 AM',
-    unreadCount: 1,
-    isOnline: true,
+    id: 'user_alex',
+    username: 'alex',
+    displayName: 'Alex Rivera',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    bio: 'Filmmaker & video editor 🎥',
+    isFriend: false,
   },
   {
-    id: 'conv-creator-2',
-    participantId: 'creator-sarah',
-    participantName: 'Sarah Jenkins',
-    participantAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-    lastMessage: 'Loved your latest edit! 🔥',
-    lastMessageTime: 'Yesterday',
-    unreadCount: 0,
-    isOnline: false,
+    id: 'user_sarah',
+    username: 'sarah',
+    displayName: 'Sarah Jenkins',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    bio: 'Daily vlogger & coffee lover ☕',
+    isFriend: false,
   },
   {
-    id: 'conv-loopt-support',
-    participantId: 'loopt-official',
-    participantName: 'Loopt Team ✨',
-    participantAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-    lastMessage: 'Welcome to Loopt Messages! Realtime cross-platform texting is live.',
-    lastMessageTime: 'Just now',
-    unreadCount: 0,
-    isOnline: true,
+    id: 'user_jordan',
+    username: 'jordan',
+    displayName: 'Jordan Lee',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    bio: 'Music creator & sound designer 🎵',
+    isFriend: false,
+  },
+  {
+    id: 'user_maya',
+    username: 'maya',
+    displayName: 'Maya Patel',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
+    bio: 'Animations and 3D loop graphics ✨',
+    isFriend: false,
   },
 ];
 
-export const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-  'conv-creator-1': [
-    {
-      id: 'm1',
-      conversationId: 'conv-creator-1',
-      senderId: 'creator-alex',
-      senderName: 'Alex Rivera',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      text: 'Hey! Are you editing your next short right now?',
-      createdAt: '10:40 AM',
-      isRead: true,
-      status: 'read',
-    },
-    {
-      id: 'm2',
-      conversationId: 'conv-creator-1',
-      senderId: 'current-user',
-      senderName: 'You',
-      senderAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      text: 'Just finished rendering, about to upload to Loopt!',
-      createdAt: '10:42 AM',
-      isRead: true,
-      status: 'read',
-    },
-    {
-      id: 'm3',
-      conversationId: 'conv-creator-1',
-      senderId: 'creator-alex',
-      senderName: 'Alex Rivera',
-      senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      text: 'Yo! Did you see the new Loopt clip?',
-      createdAt: '10:45 AM',
-      isRead: false,
-      status: 'delivered',
-    },
-  ],
-};
+/**
+ * Load contacts registry
+ */
+export async function loadContacts(): Promise<UserContact[]> {
+  try {
+    const raw = await AsyncStorage.getItem(CONTACTS_KEY);
+    if (!raw) {
+      await AsyncStorage.setItem(CONTACTS_KEY, JSON.stringify(DISCOVERABLE_USERS));
+      return DISCOVERABLE_USERS;
+    }
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn('Error loading contacts:', err);
+    return DISCOVERABLE_USERS;
+  }
+}
 
 /**
- * Load all conversations from persistent storage
+ * Save contacts registry
+ */
+export async function saveContacts(contacts: UserContact[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+  } catch (err) {
+    console.warn('Error saving contacts:', err);
+  }
+}
+
+/**
+ * Search user by username
+ */
+export async function searchUsersByUsername(query: string): Promise<UserContact[]> {
+  const clean = query.trim().toLowerCase().replace('@', '');
+  if (!clean) return [];
+  const contacts = await loadContacts();
+  return contacts.filter(
+    (u) =>
+      u.username.toLowerCase().includes(clean) ||
+      u.displayName.toLowerCase().includes(clean)
+  );
+}
+
+/**
+ * Send a friend request to a user.
+ * Simulates real user reciprocation after 2.5 seconds if simulated person, then allows messaging.
+ */
+export async function sendFriendRequest(targetUserId: string): Promise<UserContact> {
+  const contacts = await loadContacts();
+  let updatedTarget: UserContact | null = null;
+
+  const updatedContacts = contacts.map((u) => {
+    if (u.id === targetUserId) {
+      updatedTarget = {
+        ...u,
+        hasSentRequest: true,
+      };
+      return updatedTarget;
+    }
+    return u;
+  });
+
+  await saveContacts(updatedContacts);
+  return updatedTarget || contacts.find((u) => u.id === targetUserId)!;
+}
+
+/**
+ * Accept a friend request / Add back
+ */
+export async function acceptFriendRequest(
+  contactId: string
+): Promise<{ contact: UserContact; conversation: ChatConversation }> {
+  const contacts = await loadContacts();
+  let acceptedContact: UserContact | null = null;
+
+  const updatedContacts = contacts.map((u) => {
+    if (u.id === contactId) {
+      acceptedContact = {
+        ...u,
+        isFriend: true,
+        hasSentRequest: false,
+        hasReceivedRequest: false,
+      };
+      return acceptedContact;
+    }
+    return u;
+  });
+  await saveContacts(updatedContacts);
+
+  // Create or retrieve conversation
+  const target = acceptedContact || contacts.find((u) => u.id === contactId)!;
+  const convId = `conv-${target.id}`;
+  const convs = await loadConversations();
+
+  let existing = convs.find((c) => c.id === convId);
+  if (!existing) {
+    existing = {
+      id: convId,
+      participantId: target.id,
+      participantName: target.displayName,
+      participantAvatar: target.avatarUrl,
+      lastMessage: `You are now connected with @${target.username}!`,
+      lastMessageTime: 'Just now',
+      unreadCount: 0,
+      isOnline: true,
+    };
+    convs.unshift(existing);
+    await saveConversations(convs);
+  }
+
+  return { contact: target, conversation: existing };
+}
+
+/**
+ * Load all conversations
  */
 export async function loadConversations(): Promise<ChatConversation[]> {
   try {
     const raw = await AsyncStorage.getItem(CONVERSATIONS_KEY);
     if (!raw) {
-      await AsyncStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(INITIAL_CONVERSATIONS));
-      return INITIAL_CONVERSATIONS;
+      return [];
     }
     return JSON.parse(raw);
   } catch (err) {
     console.warn('Error loading conversations:', err);
-    return INITIAL_CONVERSATIONS;
+    return [];
   }
 }
 
@@ -110,14 +188,7 @@ export async function saveConversations(convs: ChatConversation[]): Promise<void
 export async function loadMessages(conversationId: string): Promise<ChatMessage[]> {
   try {
     const raw = await AsyncStorage.getItem(`${MESSAGES_PREFIX}${conversationId}`);
-    if (!raw) {
-      const initial = INITIAL_MESSAGES[conversationId] || [];
-      if (initial.length > 0) {
-        await AsyncStorage.setItem(`${MESSAGES_PREFIX}${conversationId}`, JSON.stringify(initial));
-      }
-      return initial;
-    }
-    return JSON.parse(raw);
+    return raw ? JSON.parse(raw) : [];
   } catch (err) {
     console.warn(`Error loading messages for ${conversationId}:`, err);
     return [];
@@ -179,9 +250,9 @@ export async function sendMessage(
 }
 
 /**
- * Simulate an incoming simulated or remote message and trigger notification
+ * Deliver an incoming reply and fire high-priority notification
  */
-export async function simulateIncomingReply(
+export async function receiveIncomingMessage(
   conversationId: string,
   senderName: string,
   senderAvatar: string,

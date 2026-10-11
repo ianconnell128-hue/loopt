@@ -60,3 +60,26 @@ export interface ChatConversation {
   isOnline?: boolean;
 }
 
+export interface UserContact {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  bio?: string;
+  isFriend: boolean;
+  hasSentRequest?: boolean;
+  hasReceivedRequest?: boolean;
+}
+
+export interface FriendRequest {
+  id: string;
+  fromUserId: string;
+  fromUsername: string;
+  fromDisplayName: string;
+  fromAvatar: string;
+  toUsername: string;
+  createdAt: string;
+  status: 'pending' | 'accepted' | 'declined';
+}
+
+

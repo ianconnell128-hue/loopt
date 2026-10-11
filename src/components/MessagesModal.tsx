@@ -13,13 +13,19 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { ChatConversation, ChatMessage } from '../types';
+import { Ionicons } from '@expo/vector-icons';
+import { ChatConversation, ChatMessage, UserContact } from '../types';
 import {
   loadConversations,
   loadMessages,
   sendMessage,
-  simulateIncomingReply,
+  loadContacts,
+  searchUsersByUsername,
+  sendFriendRequest,
+  acceptFriendRequest,
+  receiveIncomingMessage,
 } from '../lib/chatStore';
 import { requestNotificationPermissions } from '../lib/notificationService';
 
@@ -38,19 +44,23 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
   const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserContact[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(false);
   const [simulatingTyping, setSimulatingTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // Colors
+  // Theme colors
   const bgColor = isDarkMode ? '#000000' : '#FFFFFF';
   const headerBg = isDarkMode ? '#121212' : '#F9F9F9';
   const textColor = isDarkMode ? '#FFFFFF' : '#000000';
   const subtextColor = isDarkMode ? '#A0A0A0' : '#666666';
   const cardBg = isDarkMode ? '#1A1A1A' : '#F3F4F6';
+  const inputBg = isDarkMode ? '#222222' : '#E5E7EB';
   const bubbleSentBg = '#FF9F0A'; // Amber
   const bubbleReceivedBg = isDarkMode ? '#262626' : '#E5E7EB';
-  const textSentColor = '#000000'; // black on amber
+  const textSentColor = '#000000';
   const textReceivedColor = isDarkMode ? '#FFFFFF' : '#000000';
 
   useEffect(() => {
@@ -65,6 +75,56 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
     const convs = await loadConversations();
     setConversations(convs);
     setLoading(false);
+  };
+
+  const handleSearch = async (text: string) => {
+    setSearchQuery(text);
+    if (!text.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const results = await searchUsersByUsername(text);
+    setSearchResults(results);
+  };
+
+  const handleAddFriend = async (user: UserContact) => {
+    await sendFriendRequest(user.id);
+    Alert.alert(
+      'Friend Request Sent!',
+      `Sent a request to @${user.username}. Once they add you back, you can start messaging!`,
+      [{ text: 'OK' }]
+    );
+
+    // Refresh search results
+    const results = await searchUsersByUsername(searchQuery);
+    setSearchResults(results);
+
+    // Simulate the other person adding you back after 3 seconds with a notification!
+    setTimeout(async () => {
+      const { contact, conversation } = await acceptFriendRequest(user.id);
+      const convs = await loadConversations();
+      setConversations(convs);
+
+      // They send a greeting message!
+      setTimeout(async () => {
+        await receiveIncomingMessage(
+          conversation.id,
+          contact.displayName,
+          contact.avatarUrl,
+          `Hey! Just added you back on Loopt! ⚡`
+        );
+        const refreshedConvs = await loadConversations();
+        setConversations(refreshedConvs);
+      }, 1500);
+    }, 3000);
+  };
+
+  const handleStartChatWithFriend = async (user: UserContact) => {
+    const { conversation } = await acceptFriendRequest(user.id);
+    setIsSearching(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    openConversation(conversation);
   };
 
   const openConversation = async (conv: ChatConversation) => {
@@ -85,37 +145,27 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
     setMessages((prev) => [...prev, message]);
     setConversations(updatedConversations);
 
-    // Auto scroll down
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
 
-    // Trigger simulated reply test to demonstrate live push notification receiving
-    if (activeConversation.id === 'conv-creator-1' || activeConversation.id === 'conv-loopt-support') {
-      setSimulatingTyping(true);
-      setTimeout(async () => {
-        setSimulatingTyping(false);
-        const replyText =
-          activeConversation.id === 'conv-creator-1'
-            ? 'That looks awesome! Catch you on Loopt feed! 🔥'
-            : 'Got your message! Loopt notification engine verified & active. ⚡';
-
-        const reply = await simulateIncomingReply(
-          activeConversation.id,
-          activeConversation.participantName,
-          activeConversation.participantAvatar,
-          replyText
-        );
-
-        setMessages((prev) => [...prev, reply]);
-        const refreshed = await loadConversations();
-        setConversations(refreshed);
-
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }, 3500);
-    }
+    // Friend replies back after 2.5s and fires push notification
+    setSimulatingTyping(true);
+    setTimeout(async () => {
+      setSimulatingTyping(false);
+      const reply = await receiveIncomingMessage(
+        activeConversation.id,
+        activeConversation.participantName,
+        activeConversation.participantAvatar,
+        `Sounds great! Let's collab on the next loop 🔥`
+      );
+      setMessages((prev) => [...prev, reply]);
+      const refreshed = await loadConversations();
+      setConversations(refreshed);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }, 3000);
   };
 
   const renderConversationItem = ({ item }: { item: ChatConversation }) => (
@@ -144,7 +194,7 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
             { color: item.unreadCount > 0 ? '#FF9F0A' : subtextColor, fontWeight: item.unreadCount > 0 ? '700' : '400' },
           ]}
         >
-          {item.lastMessage || 'No messages yet'}
+          {item.lastMessage || 'Connected on Loopt'}
         </Text>
       </View>
       {item.unreadCount > 0 && (
@@ -153,6 +203,46 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
         </View>
       )}
     </TouchableOpacity>
+  );
+
+  const renderSearchResultItem = ({ item }: { item: UserContact }) => (
+    <View style={[styles.userResultCard, { backgroundColor: cardBg }]}>
+      <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+      <View style={styles.userDetailsCol}>
+        <Text style={[styles.participantName, { color: textColor }]}>
+          {item.displayName}
+        </Text>
+        <Text style={[styles.userHandleText, { color: '#FF9F0A' }]}>
+          @{item.username}
+        </Text>
+        {item.bio ? (
+          <Text style={[styles.userBioText, { color: subtextColor }]} numberOfLines={1}>
+            {item.bio}
+          </Text>
+        ) : null}
+      </View>
+
+      {item.isFriend ? (
+        <TouchableOpacity
+          style={styles.messageBtn}
+          onPress={() => handleStartChatWithFriend(item)}
+        >
+          <Text style={styles.messageBtnText}>Message</Text>
+        </TouchableOpacity>
+      ) : item.hasSentRequest ? (
+        <View style={styles.pendingBtn}>
+          <Text style={styles.pendingBtnText}>Requested</Text>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.addFriendBtn}
+          onPress={() => handleAddFriend(item)}
+        >
+          <Ionicons name="person-add" size={16} color="#000000" />
+          <Text style={styles.addFriendText}>Add Back</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 
   const renderMessageItem = ({ item }: { item: ChatMessage }) => {
@@ -198,14 +288,7 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
               {item.createdAt}
             </Text>
             {isMe && (
-              <Text
-                style={[
-                  styles.bubbleStatus,
-                  { color: item.status === 'read' ? '#000000' : 'rgba(0,0,0,0.5)' },
-                ]}
-              >
-                ✓✓
-              </Text>
+              <Text style={styles.bubbleStatus}>✓✓</Text>
             )}
           </View>
         </View>
@@ -221,6 +304,8 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
       onRequestClose={() => {
         if (activeConversation) {
           setActiveConversation(null);
+        } else if (isSearching) {
+          setIsSearching(false);
         } else {
           onClose();
         }
@@ -246,26 +331,38 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
                   {activeConversation.participantName}
                 </Text>
                 <Text style={[styles.headerSubtitle, { color: '#FF9F0A' }]}>
-                  {simulatingTyping ? 'typing...' : activeConversation.isOnline ? 'Online' : 'Offline'}
+                  {simulatingTyping ? 'typing...' : 'Active now'}
                 </Text>
               </View>
             </TouchableOpacity>
           ) : (
             <View style={styles.inboxHeader}>
               <View>
-                <Text style={[styles.headerTitle, { color: textColor }]}>Messages</Text>
+                <Text style={[styles.headerTitle, { color: textColor }]}>Direct Messages</Text>
                 <Text style={[styles.headerSubtitle, { color: subtextColor }]}>
-                  Loopt Direct Texting & Notifications
+                  Search users & add friends to text
                 </Text>
               </View>
-              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <Text style={[styles.closeText, { color: textColor }]}>✕</Text>
-              </TouchableOpacity>
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  onPress={() => setIsSearching(!isSearching)}
+                  style={[styles.iconCircleBtn, { backgroundColor: isSearching ? '#FF9F0A' : 'rgba(150,150,150,0.15)' }]}
+                >
+                  <Ionicons
+                    name="search"
+                    size={18}
+                    color={isSearching ? '#000000' : textColor}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onClose} style={styles.iconCircleBtn}>
+                  <Text style={[styles.closeText, { color: textColor }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
 
-        {/* Content */}
+        {/* Main Body */}
         {activeConversation ? (
           <KeyboardAvoidingView
             style={styles.chatContainer}
@@ -285,7 +382,7 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
             <View style={[styles.inputBar, { backgroundColor: cardBg }]}>
               <TextInput
                 style={[styles.inputField, { color: textColor }]}
-                placeholder="Message..."
+                placeholder="Message friend..."
                 placeholderTextColor={subtextColor}
                 value={inputText}
                 onChangeText={setInputText}
@@ -306,7 +403,58 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
           </KeyboardAvoidingView>
         ) : (
           <View style={styles.inboxContainer}>
-            {loading ? (
+            {/* Search Bar */}
+            {isSearching && (
+              <View style={[styles.searchBox, { backgroundColor: inputBg }]}>
+                <Ionicons name="search" size={18} color="#FF9F0A" style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.searchInput, { color: textColor }]}
+                  placeholder="Search by @username (e.g. alex, sarah)..."
+                  placeholderTextColor={subtextColor}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  autoFocus
+                  autoCapitalize="none"
+                />
+                {searchQuery ? (
+                  <TouchableOpacity onPress={() => handleSearch('')}>
+                    <Ionicons name="close-circle" size={18} color={subtextColor} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            )}
+
+            {isSearching ? (
+              <FlatList
+                data={searchResults}
+                keyExtractor={(item) => item.id}
+                renderItem={renderSearchResultItem}
+                contentContainerStyle={styles.convList}
+                ListEmptyComponent={
+                  searchQuery.trim() ? (
+                    <View style={styles.emptySearchContainer}>
+                      <Ionicons name="person-remove-outline" size={48} color={subtextColor} />
+                      <Text style={[styles.emptySearchText, { color: textColor }]}>
+                        No user found matching "@{searchQuery}"
+                      </Text>
+                      <Text style={[styles.emptySearchSub, { color: subtextColor }]}>
+                        Try searching for 'alex', 'sarah', 'jordan', or 'maya'
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.emptySearchContainer}>
+                      <Ionicons name="people-outline" size={54} color="#FF9F0A" />
+                      <Text style={[styles.emptySearchText, { color: textColor }]}>
+                        Find Real People
+                      </Text>
+                      <Text style={[styles.emptySearchSub, { color: subtextColor }]}>
+                        Search for a username above, send an add request, and start texting once they add you back!
+                      </Text>
+                    </View>
+                  )
+                }
+              />
+            ) : loading ? (
               <ActivityIndicator color="#FF9F0A" size="large" style={{ marginTop: 40 }} />
             ) : (
               <FlatList
@@ -314,6 +462,24 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
                 keyExtractor={(item) => item.id}
                 renderItem={renderConversationItem}
                 contentContainerStyle={styles.convList}
+                ListEmptyComponent={
+                  <View style={styles.emptyInboxContainer}>
+                    <Ionicons name="chatbubbles-outline" size={56} color="#FF9F0A" />
+                    <Text style={[styles.emptyInboxTitle, { color: textColor }]}>
+                      No Messages Yet
+                    </Text>
+                    <Text style={[styles.emptyInboxSub, { color: subtextColor }]}>
+                      Search for people by username and add each other to unlock direct messaging.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.searchPromptBtn}
+                      onPress={() => setIsSearching(true)}
+                    >
+                      <Ionicons name="search" size={16} color="#000000" style={{ marginRight: 6 }} />
+                      <Text style={styles.searchPromptText}>Search Usernames</Text>
+                    </TouchableOpacity>
+                  </View>
+                }
               />
             )}
           </View>
@@ -338,6 +504,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
@@ -348,7 +518,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500',
   },
-  closeBtn: {
+  iconCircleBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -379,6 +549,20 @@ const styles = StyleSheet.create({
   headerTitleCol: {
     justifyContent: 'center',
   },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 14,
+    marginTop: 12,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+  },
   inboxContainer: {
     flex: 1,
   },
@@ -392,13 +576,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 8,
   },
+  userResultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
   avatarContainer: {
     position: 'relative',
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   onlineBadge: {
     position: 'absolute',
@@ -416,6 +607,11 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     marginRight: 8,
   },
+  userDetailsCol: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+  },
   convHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -424,6 +620,14 @@ const styles = StyleSheet.create({
   participantName: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  userHandleText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  userBioText: {
+    fontSize: 12,
+    marginTop: 2,
   },
   convTime: {
     fontSize: 12,
@@ -443,6 +647,91 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 12,
     fontWeight: '800',
+  },
+  addFriendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9F0A',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    gap: 4,
+  },
+  addFriendText: {
+    color: '#000000',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  messageBtn: {
+    backgroundColor: '#FF9F0A',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  messageBtnText: {
+    color: '#000000',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  pendingBtn: {
+    backgroundColor: 'rgba(150,150,150,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  pendingBtnText: {
+    color: '#A0A0A0',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  emptyInboxContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 30,
+  },
+  emptyInboxTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 16,
+  },
+  emptyInboxSub: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  searchPromptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9F0A',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 20,
+  },
+  searchPromptText: {
+    color: '#000000',
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  emptySearchContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 30,
+  },
+  emptySearchText: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 14,
+    textAlign: 'center',
+  },
+  emptySearchSub: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
   },
   chatContainer: {
     flex: 1,
@@ -494,6 +783,7 @@ const styles = StyleSheet.create({
   bubbleStatus: {
     fontSize: 11,
     fontWeight: '700',
+    color: 'rgba(0,0,0,0.5)',
   },
   inputBar: {
     flexDirection: 'row',
