@@ -35,7 +35,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
-  const [isFollowed, setIsFollowed] = useState<boolean>(video.creator.isFollowed || false);
+  const [contentFitMode, setContentFitMode] = useState<'cover' | 'contain'>('cover');
   const [expanded, setExpanded] = useState<boolean>(false);
 
   // Double-tap heart animation
@@ -109,10 +109,27 @@ export const ShortCard: React.FC<ShortCardProps> = ({
         <VideoView
           style={styles.videoView}
           player={player}
-          contentFit="cover"
+          contentFit={contentFitMode}
           nativeControls={false}
           surfaceType="textureView"
         />
+
+        {/* Screen Fit Mode Toggle Button */}
+        <TouchableOpacity
+          style={styles.fitToggleBtn}
+          activeOpacity={0.8}
+          onPress={() => setContentFitMode(contentFitMode === 'cover' ? 'contain' : 'cover')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons
+            name={contentFitMode === 'cover' ? 'contract-outline' : 'expand-outline'}
+            size={18}
+            color="#FFFFFF"
+          />
+          <Text style={styles.fitToggleText}>
+            {contentFitMode === 'cover' ? 'Fill' : 'Fit'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Play / Pause indicator icon */}
         {showPlayIcon && (
@@ -152,18 +169,14 @@ export const ShortCard: React.FC<ShortCardProps> = ({
 
         {/* Bottom Overlay Info (Creator, Title, Caption, Audio) */}
         <View style={styles.bottomInfoContainer}>
-          {/* Creator handle & Follow button */}
+          {/* Creator handle */}
           <View style={styles.creatorRow}>
             <Image source={{ uri: video.creator.avatarUrl }} style={styles.avatar} />
             <Text style={styles.username}>{video.creator.username}</Text>
-            <TouchableOpacity
-              style={[styles.followBtn, isFollowed && styles.followedBtn]}
-              onPress={() => setIsFollowed(!isFollowed)}
-            >
-              <Text style={[styles.followText, isFollowed && styles.followedText]}>
-                {isFollowed ? 'Following' : 'Subscribe'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.creatorBadge}>
+              <Ionicons name="checkmark-circle" size={13} color="#3EA6FF" />
+              <Text style={styles.creatorBadgeText}>Channel Owner</Text>
+            </View>
           </View>
 
           {/* Title & Caption */}
@@ -257,22 +270,41 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  followBtn: {
-    backgroundColor: '#FF0000',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+  fitToggleBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    zIndex: 15,
   },
-  followedBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-  },
-  followText: {
+  fitToggleText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
   },
-  followedText: {
-    color: '#E0E0E0',
+  creatorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(62, 166, 255, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(62, 166, 255, 0.3)',
+  },
+  creatorBadgeText: {
+    color: '#3EA6FF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   titleText: {
     color: '#FFFFFF',

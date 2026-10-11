@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CommentItem } from '../types';
@@ -17,56 +18,56 @@ import { CommentItem } from '../types';
 interface CommentsModalProps {
   visible: boolean;
   onClose: () => void;
+  videoId: string;
   videoTitle: string;
+  getComments: (videoId: string) => Promise<CommentItem[]>;
+  onAddComment: (videoId: string, text: string) => Promise<CommentItem>;
 }
-
-const DEFAULT_COMMENTS: CommentItem[] = [
-  {
-    id: 'c1',
-    username: 'alex_visuals',
-    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-    text: 'The color grading on this is unreal! 🔥',
-    createdAt: '2h ago',
-    likesCount: 142,
-  },
-  {
-    id: 'c2',
-    username: 'maya_codes',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-    text: 'Watched this 5 times already 👏',
-    createdAt: '4h ago',
-    likesCount: 39,
-  },
-  {
-    id: 'c3',
-    username: 'sam_creatives',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    text: 'Need a tutorial on how you made this sound track!',
-    createdAt: '1d ago',
-    likesCount: 18,
-  },
-];
 
 export const CommentsModal: React.FC<CommentsModalProps> = ({
   visible,
   onClose,
+  videoId,
   videoTitle,
+  getComments,
+  onAddComment,
 }) => {
-  const [comments, setComments] = useState<CommentItem[]>(DEFAULT_COMMENTS);
+  const [comments, setComments] = useState<CommentItem[]>([]);
   const [input, setInput] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newComment: CommentItem = {
-      id: 'c-' + Date.now(),
-      username: 'you',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      text: input.trim(),
-      createdAt: 'Just now',
-      likesCount: 0,
-    };
-    setComments([newComment, ...comments]);
+  useEffect(() => {
+    if (visible && videoId) {
+      setLoading(true);
+      getComments(videoId)
+        .then((items) => setComments(items))
+        .finally(() => setLoading(false));
+    }
+  }, [visible, videoId, getComments]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !videoId) return;
+    const trimmed = input.trim();
     setInput('');
+    try {
+      const added = await onAddComment(videoId, trimmed);
+      setComments((prev) => [added, ...prev]);
+    } catch (err) {
+      console.warn('Comment error:', err);
+    }
+  };
+
+  const toggleCommentLike = (commentId: string) => {
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c.id === commentId) {
+          const isLiked = !c.isLiked;
+          const likesCount = isLiked ? c.likesCount + 1 : Math.max(0, c.likesCount - 1);
+          return { ...c, isLiked, likesCount };
+        }
+        return c;
+      })
+    );
   };
 
   return (
@@ -88,33 +89,52 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
           </View>
 
           {/* Comments List */}
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <View style={styles.commentItem}>
-                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
-                <View style={styles.commentBody}>
-                  <View style={styles.commentUserRow}>
-                    <Text style={styles.commentUser}>{item.username}</Text>
-                    <Text style={styles.commentTime}>{item.createdAt}</Text>
+          {loading ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator color="#FF0000" />
+            </View>
+          ) : comments.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubbles-outline" size={44} color="#555" />
+              <Text style={styles.emptyTitle}>No comments yet</Text>
+              <Text style={styles.emptySubtitle}>Be the first to share your thoughts!</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              renderItem={({ item }) => (
+                <View style={styles.commentItem}>
+                  <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+                  <View style={styles.commentBody}>
+                    <View style={styles.commentUserRow}>
+                      <Text style={styles.commentUser}>{item.username}</Text>
+                      <Text style={styles.commentTime}>{item.createdAt}</Text>
+                    </View>
+                    <Text style={styles.commentText}>{item.text}</Text>
                   </View>
-                  <Text style={styles.commentText}>{item.text}</Text>
+                  <TouchableOpacity
+                    style={styles.commentLike}
+                    onPress={() => toggleCommentLike(item.id)}
+                  >
+                    <Ionicons
+                      name={item.isLiked ? 'heart' : 'heart-outline'}
+                      size={16}
+                      color={item.isLiked ? '#FF2D55' : '#888'}
+                    />
+                    <Text style={styles.commentLikeCount}>{item.likesCount}</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.commentLike}>
-                  <Ionicons name="heart-outline" size={16} color="#888" />
-                  <Text style={styles.commentLikeCount}>{item.likesCount}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
+              )}
+            />
+          )}
 
           {/* Input Bar */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Add a comment..."
+              placeholder="Add a real comment..."
               placeholderTextColor="#888"
               value={input}
               onChangeText={setInput}
@@ -172,6 +192,28 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  centerBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  emptyTitle: {
+    color: '#DDD',
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  emptySubtitle: {
+    color: '#777',
+    fontSize: 13,
+    marginTop: 4,
   },
   listContent: {
     padding: 16,

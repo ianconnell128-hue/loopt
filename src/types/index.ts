@@ -1,3 +1,12 @@
+export interface UserProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  bio: string;
+  subscribersCount: number;
+}
+
 export interface ShortVideo {
   id: string;
   title: string;
@@ -7,7 +16,6 @@ export interface ShortVideo {
     id: string;
     username: string;
     avatarUrl: string;
-    isFollowed?: boolean;
   };
   songTitle?: string;
   likesCount: number;
@@ -24,4 +32,5 @@ export interface CommentItem {
   text: string;
   createdAt: string;
   likesCount: number;
+  isLiked?: boolean;
 }

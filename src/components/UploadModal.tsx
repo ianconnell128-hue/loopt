@@ -15,11 +15,17 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { ShortVideo } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { saveVideoPermanently } from '../lib/videoStorage';
 
 interface UploadModalProps {
   visible: boolean;
   onClose: () => void;
-  onUploadSuccess: (video: Omit<ShortVideo, 'id' | 'likesCount' | 'commentsCount' | 'sharesCount' | 'isLiked'>) => void;
+  onUploadSuccess: (video: {
+    title: string;
+    description: string;
+    videoUri: string;
+    songTitle?: string;
+  }) => void;
 }
 
 export const UploadModal: React.FC<UploadModalProps> = ({
@@ -71,49 +77,49 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     }
 
     setIsUploading(true);
-    let finalVideoUrl = selectedUri;
-
     try {
-      // If Supabase is connected, upload video file to Supabase Storage bucket
+      // 1. Save permanently to device documentDirectory so it is never deleted
+      const permanentUri = await saveVideoPermanently(selectedUri);
+      let finalVideoUrl = permanentUri;
+
+      // 2. If Supabase is connected, upload video file to Supabase Storage bucket
       if (isSupabaseConfigured && supabase) {
-        const fileExt = selectedUri.split('.').pop() || 'mp4';
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `user_uploads/${fileName}`;
+        try {
+          const fileExt = selectedUri.split('.').pop() || 'mp4';
+          const fileName = `${Date.now()}.${fileExt}`;
+          const filePath = `user_uploads/${fileName}`;
 
-        const response = await fetch(selectedUri);
-        const blob = await response.blob();
+          const response = await fetch(permanentUri);
+          const blob = await response.blob();
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('videos')
-          .upload(filePath, blob, {
-            contentType: 'video/mp4',
-            upsert: false,
-          });
-
-        if (uploadError) {
-          console.warn('Supabase storage upload failed, falling back to local URI:', uploadError);
-        } else if (uploadData) {
-          const { data: publicUrlData } = supabase.storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
             .from('videos')
-            .getPublicUrl(uploadData.path);
-          if (publicUrlData?.publicUrl) {
-            finalVideoUrl = publicUrlData.publicUrl;
+            .upload(filePath, blob, {
+              contentType: 'video/mp4',
+              upsert: false,
+            });
+
+          if (uploadError) {
+            console.warn('Supabase storage upload failed, keeping permanent local file:', uploadError);
+          } else if (uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('videos')
+              .getPublicUrl(uploadData.path);
+            if (publicUrlData?.publicUrl) {
+              finalVideoUrl = publicUrlData.publicUrl;
+            }
           }
+        } catch (storageErr) {
+          console.warn('Remote upload failed, continuing with permanent local video:', storageErr);
         }
       }
 
-      // Create new short item
+      // 3. Create new short item
       onUploadSuccess({
         title: title.trim(),
         description: description.trim(),
         videoUri: finalVideoUrl,
-        songTitle: songTitle.trim() || 'Original Audio',
-        creator: {
-          id: 'me',
-          username: '@creator',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          isFollowed: false,
-        },
+        songTitle: songTitle.trim() || 'Original Audio - Ian',
       });
 
       // Reset & close
