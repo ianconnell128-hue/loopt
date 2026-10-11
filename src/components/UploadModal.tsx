@@ -56,12 +56,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   const handlePickVideos = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'We need access to your gallery to select videos.');
-        return;
-      }
-
+      // Modern Android Photo Picker does not require runtime permissions.
+      // We attempt to open the system picker directly.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'],
         allowsMultipleSelection: true,
@@ -75,8 +71,50 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         setActivePreviewIndex(0);
       }
     } catch (err) {
-      console.error('Picker error:', err);
-      Alert.alert('Error', 'Could not open video picker.');
+      console.warn('Direct picker attempted, checking permissions fallback:', err);
+      // Fallback: Check permissions and provide direct 1-tap Settings button
+      try {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert(
+            'Permission Required',
+            'Loopt needs access to your videos. Tap "Open Settings" to enable Photos & Videos in App Permissions.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Open Settings',
+                onPress: () => {
+                  Linking.openSettings().catch(() => {});
+                },
+              },
+            ]
+          );
+          return;
+        }
+
+        const retryResult = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['videos'],
+          allowsMultipleSelection: true,
+          allowsEditing: false,
+          quality: 1,
+        });
+
+        if (!retryResult.canceled && retryResult.assets && retryResult.assets.length > 0) {
+          const uris = retryResult.assets.map(a => a.uri);
+          setSelectedUris(uris);
+          setActivePreviewIndex(0);
+        }
+      } catch (fallbackErr) {
+        console.error('Picker error:', fallbackErr);
+        Alert.alert(
+          'Permission Required',
+          'Please allow video access in your device Settings > Apps > Loopt > Permissions.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {}) },
+          ]
+        );
+      }
     }
   };
 
@@ -84,7 +122,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Camera Permission Required', 'Please enable camera access to record videos.');
+        Alert.alert(
+          'Camera Permission Required',
+          'Please enable camera access in App Permissions to record loops.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {}) },
+          ]
+        );
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
