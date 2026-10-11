@@ -11,6 +11,7 @@ import {
   LayoutChangeEvent,
   ActivityIndicator,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -117,13 +118,17 @@ function MainScreen() {
             {/* Top Bar Floating Header */}
             <View style={[styles.topHeader, { top: Math.max(8, insets.top) }]}>
               <View style={styles.topHeaderLeft}>
-                <Ionicons name="repeat" size={24} color="#FF9F0A" />
+                <Image
+                  source={require('./assets/icon.png')}
+                  style={styles.headerLogoIcon}
+                />
                 <Text style={styles.appTitle}>Loopt</Text>
                 <View style={styles.userTagPill}>
                   <Text style={styles.userTagText}>{profile.username}</Text>
                 </View>
               </View>
               <View style={styles.topHeaderRight}>
+
                 <TouchableOpacity
                   style={styles.headerIconBtn}
                   onPress={() => setIsUploadVisible(true)}
@@ -350,7 +355,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  headerLogoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+  },
   appTitle: {
+
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: '800',
