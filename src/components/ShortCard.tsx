@@ -256,7 +256,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
           </View>
 
           {/* Title & Caption */}
-          <Text style={styles.titleText}>{video.title}</Text>
+          {video.title ? <Text style={styles.titleText}>{video.title}</Text> : null}
           {video.description ? (
             <TouchableOpacity onPress={() => setExpanded(!expanded)} activeOpacity={0.9}>
               <Text

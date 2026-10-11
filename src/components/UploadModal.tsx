@@ -41,18 +41,20 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   userProfile = { id: 'my-account', username: '@ian', avatarUrl: '' },
   isDarkMode = true,
 }) => {
-  const [selectedUri, setSelectedUri] = useState<string | null>(null);
+  const [selectedUris, setSelectedUris] = useState<string[]>([]);
+  const [activePreviewIndex, setActivePreviewIndex] = useState<number>(0);
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [songTitle, setSongTitle] = useState<string>('Original Audio - You');
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isImportingSnapchat, setIsImportingSnapchat] = useState<boolean>(false);
 
-  const previewPlayer = useVideoPlayer(selectedUri || '', (player) => {
+  const currentPreviewUri = selectedUris[activePreviewIndex] || '';
+  const previewPlayer = useVideoPlayer(currentPreviewUri, (player) => {
     player.loop = true;
   });
 
-  const handlePickVideo = async () => {
+  const handlePickVideos = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -62,14 +64,16 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['videos'],
+        allowsMultipleSelection: true,
         allowsEditing: false,
         quality: 1,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setSelectedUri(result.assets[0].uri);
+        const uris = result.assets.map(a => a.uri);
+        setSelectedUris(uris);
+        setActivePreviewIndex(0);
       }
-
     } catch (err) {
       console.error('Picker error:', err);
       Alert.alert('Error', 'Could not open video picker.');
@@ -90,7 +94,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setSelectedUri(result.assets[0].uri);
+        setSelectedUris([result.assets[0].uri]);
+        setActivePreviewIndex(0);
       }
     } catch (err) {
       console.error('Camera recording error:', err);
@@ -98,71 +103,106 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     }
   };
 
-
+  const removeSelectedUri = (indexToRemove: number) => {
+    const updated = selectedUris.filter((_, idx) => idx !== indexToRemove);
+    setSelectedUris(updated);
+    if (activePreviewIndex >= updated.length) {
+      setActivePreviewIndex(Math.max(0, updated.length - 1));
+    }
+  };
 
   const handlePublish = async () => {
-    if (!selectedUri) {
-      Alert.alert('Select a video', 'Please choose a video file first.');
-      return;
-    }
-    if (!title.trim()) {
-      Alert.alert('Add a title', 'Please add a short title for your video.');
+    if (selectedUris.length === 0) {
+      Alert.alert('Select Videos', 'Please choose at least one video to post.');
       return;
     }
 
     setIsUploading(true);
     try {
-      // 1. Save permanently to device documentDirectory so it is never deleted
-      const permanentUri = await saveVideoPermanently(selectedUri);
-      let finalVideoUrl = permanentUri;
+      const createdVideos: ShortVideo[] = [];
 
-      // 2. If Supabase is connected, upload video file to Supabase Storage bucket
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const fileExt = selectedUri.split('.').pop() || 'mp4';
-          const fileName = `${Date.now()}.${fileExt}`;
-          const filePath = `user_uploads/${fileName}`;
+      for (let i = 0; i < selectedUris.length; i++) {
+        const rawUri = selectedUris[i];
+        // 1. Save permanently to device documentDirectory so it is never deleted
+        const permanentUri = await saveVideoPermanently(rawUri);
+        let finalVideoUrl = permanentUri;
 
-          const response = await fetch(permanentUri);
-          const blob = await response.blob();
+        // 2. If Supabase is connected, upload video file
+        if (isSupabaseConfigured && supabase) {
+          try {
+            const fileExt = rawUri.split('.').pop() || 'mp4';
+            const fileName = `${Date.now()}_${i}.${fileExt}`;
+            const filePath = `user_uploads/${fileName}`;
 
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('videos')
-            .upload(filePath, blob, {
-              contentType: 'video/mp4',
-              upsert: false,
-            });
+            const response = await fetch(permanentUri);
+            const blob = await response.blob();
 
-          if (uploadError) {
-            console.warn('Supabase storage upload failed, keeping permanent local file:', uploadError);
-          } else if (uploadData) {
-            const { data: publicUrlData } = supabase.storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
               .from('videos')
-              .getPublicUrl(uploadData.path);
-            if (publicUrlData?.publicUrl) {
-              finalVideoUrl = publicUrlData.publicUrl;
+              .upload(filePath, blob, {
+                contentType: 'video/mp4',
+                upsert: false,
+              });
+
+            if (!uploadError && uploadData) {
+              const { data: publicUrlData } = supabase.storage
+                .from('videos')
+                .getPublicUrl(uploadData.path);
+              if (publicUrlData?.publicUrl) {
+                finalVideoUrl = publicUrlData.publicUrl;
+              }
             }
+          } catch (storageErr) {
+            console.warn('Remote upload failed, keeping permanent local file:', storageErr);
           }
-        } catch (storageErr) {
-          console.warn('Remote upload failed, continuing with permanent local video:', storageErr);
         }
+
+        const videoItem: ShortVideo = {
+          id: `short_${Date.now()}_${i}`,
+          title: title.trim(), // Optional! If empty, title is empty
+          description: description.trim(),
+          videoUri: finalVideoUrl,
+          creator: {
+            id: userProfile.id,
+            username: userProfile.username,
+            avatarUrl: userProfile.avatarUrl,
+          },
+          songTitle: songTitle.trim() || 'Original Audio - You',
+          likesCount: 0,
+          commentsCount: 0,
+          sharesCount: 0,
+          isLiked: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        createdVideos.push(videoItem);
       }
 
-      // 3. Create new short item
-      onUploadSuccess({
-        title: title.trim(),
-        description: description.trim(),
-        videoUri: finalVideoUrl,
-        songTitle: songTitle.trim() || 'Original Audio - Ian',
-      });
+      if (createdVideos.length === 1) {
+        onUploadSuccess({
+          title: createdVideos[0].title,
+          description: createdVideos[0].description,
+          videoUri: createdVideos[0].videoUri,
+          songTitle: createdVideos[0].songTitle,
+        });
+      } else if (createdVideos.length > 1 && onBatchImport) {
+        onBatchImport(createdVideos);
+      }
 
       // Reset & close
-      setSelectedUri(null);
+      setSelectedUris([]);
+      setActivePreviewIndex(0);
       setTitle('');
       setDescription('');
       setSongTitle('Original Audio - You');
       onClose();
-      Alert.alert('Published!', 'Your video has been added to your feed.');
+
+      Alert.alert(
+        'Published!',
+        createdVideos.length > 1
+          ? `Successfully posted all ${createdVideos.length} loops to your feed!`
+          : 'Your loop has been added to your feed.'
+      );
     } catch (err) {
       console.error('Publish error:', err);
       Alert.alert('Publish Failed', 'Something went wrong while publishing.');
@@ -211,13 +251,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         ]
       );
     } finally {
-
       setIsImportingSnapchat(false);
     }
   };
 
   const resetModal = () => {
-    setSelectedUri(null);
+    setSelectedUris([]);
+    setActivePreviewIndex(0);
     setTitle('');
     setDescription('');
     onClose();
@@ -231,23 +271,27 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           <TouchableOpacity onPress={resetModal}>
             <Ionicons name="close" size={26} color={isDarkMode ? '#FFFFFF' : '#000000'} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>Create Loop</Text>
+          <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>
+            {selectedUris.length > 1 ? `Create ${selectedUris.length} Loops` : 'Create Loop'}
+          </Text>
           <TouchableOpacity
-            style={[styles.publishBtn, (!selectedUri || !title.trim() || isUploading) && styles.publishBtnDisabled]}
-            disabled={!selectedUri || !title.trim() || isUploading}
+            style={[styles.publishBtn, (selectedUris.length === 0 || isUploading) && styles.publishBtnDisabled]}
+            disabled={selectedUris.length === 0 || isUploading}
             onPress={handlePublish}
           >
             {isUploading ? (
               <ActivityIndicator size="small" color="#000000" />
             ) : (
-              <Text style={styles.publishBtnText}>Post</Text>
+              <Text style={styles.publishBtnText}>
+                {selectedUris.length > 1 ? `Post All (${selectedUris.length})` : 'Post'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
           {/* Video Preview or Pick Zone */}
-          {selectedUri ? (
+          {selectedUris.length > 0 ? (
             <View style={styles.previewContainer}>
               <VideoView
                 style={styles.previewVideo}
@@ -256,9 +300,46 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 contentFit="contain"
                 surfaceType="textureView"
               />
-              <TouchableOpacity style={styles.changeVideoBtn} onPress={handlePickVideo}>
-                <Ionicons name="refresh" size={16} color="#FFFFFF" />
-                <Text style={styles.changeVideoText}>Change Video</Text>
+
+              {/* Multi-video pill carousel if multiple videos selected */}
+              {selectedUris.length > 1 && (
+                <View style={styles.multiVideoBar}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.multiVideoScroll}>
+                    {selectedUris.map((uri, idx) => (
+                      <View key={uri + idx} style={[styles.thumbnailPill, activePreviewIndex === idx && styles.thumbnailPillActive]}>
+                        <TouchableOpacity
+                          onPress={() => setActivePreviewIndex(idx)}
+                          style={styles.thumbnailPillBtn}
+                        >
+                          <Ionicons
+                            name="videocam"
+                            size={14}
+                            color={activePreviewIndex === idx ? '#000000' : '#FFFFFF'}
+                          />
+                          <Text
+                            style={[
+                              styles.thumbnailPillText,
+                              activePreviewIndex === idx && styles.thumbnailPillTextActive,
+                            ]}
+                          >
+                            Loop {idx + 1}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => removeSelectedUri(idx)}
+                          style={styles.removePillBtn}
+                        >
+                          <Ionicons name="close-circle" size={16} color="#FF453A" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              <TouchableOpacity style={styles.changeVideoBtn} onPress={handlePickVideos}>
+                <Ionicons name="add-circle" size={16} color="#FFFFFF" />
+                <Text style={styles.changeVideoText}>Select More</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -303,30 +384,32 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <Text style={styles.uploadCardSubtitle}>Record up to 60s video directly using your camera</Text>
               </TouchableOpacity>
 
-              {/* Manual Device Video Picker */}
+              {/* Multi-Video Gallery Picker */}
               <TouchableOpacity
                 style={[styles.uploadCard, !isDarkMode && styles.uploadCardLight]}
                 activeOpacity={0.8}
-                onPress={handlePickVideo}
+                onPress={handlePickVideos}
               >
                 <View style={styles.uploadIconCircle}>
                   <Ionicons name="images-outline" size={34} color="#FF9F0A" />
                 </View>
                 <Text style={[styles.uploadCardTitle, !isDarkMode && styles.uploadCardTitleLight]}>
-                  Select Video from Gallery
+                  Select Videos from Gallery
                 </Text>
-                <Text style={styles.uploadCardSubtitle}>Choose vertical MP4 or saved videos from your device</Text>
+                <Text style={styles.uploadCardSubtitle}>Choose 1 or multiple videos at once from your device</Text>
               </TouchableOpacity>
             </>
           )}
 
-
-          {/* Form Fields */}
+          {/* Form Fields - Titles are now completely optional! */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Title / Caption *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Title / Caption</Text>
+              <Text style={styles.optionalBadge}>Optional</Text>
+            </View>
             <TextInput
               style={styles.input}
-              placeholder="Give your short an engaging title..."
+              placeholder="Leave blank or give your loop a title..."
               placeholderTextColor="#777"
               value={title}
               onChangeText={setTitle}
@@ -335,7 +418,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Description / Tags</Text>
+            <Text style={styles.label}>Description / Tags (Optional)</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Add details, hashtags like #shorts #trending..."
@@ -348,7 +431,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Sound / Music Name</Text>
+            <Text style={styles.label}>Sound / Music Name (Optional)</Text>
             <TextInput
               style={styles.input}
               placeholder="Audio track title"
@@ -378,15 +461,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1A1A1A',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#222222',
   },
   headerLight: {
     borderBottomColor: '#E5E5EA',
   },
   headerTitle: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
   headerTitleLight: {
@@ -394,17 +477,21 @@ const styles = StyleSheet.create({
   },
   publishBtn: {
     backgroundColor: '#FF9F0A',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 7,
-    borderRadius: 18,
+    borderRadius: 20,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   publishBtnDisabled: {
     backgroundColor: '#333333',
+    opacity: 0.6,
   },
   publishBtnText: {
     color: '#000000',
+    fontWeight: '700',
     fontSize: 14,
-    fontWeight: '800',
   },
   content: {
     flex: 1,
@@ -413,28 +500,28 @@ const styles = StyleSheet.create({
   snapchatBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161616',
-    borderWidth: 1.5,
-    borderColor: '#FFD60A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     marginBottom: 16,
-    gap: 12,
+    borderWidth: 1,
+    borderColor: '#FFFC00',
   },
   snapchatBannerLight: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FF9F0A',
+    backgroundColor: '#F2F2F7',
   },
   snapchatIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFD60A',
+    borderRadius: 12,
+    backgroundColor: '#FFFC00',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
   snapchatTextBox: {
     flex: 1,
+    paddingRight: 8,
   },
   snapchatTitle: {
     color: '#FFFFFF',
@@ -451,25 +538,25 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   uploadCard: {
-    backgroundColor: '#161616',
+    backgroundColor: '#121212',
     borderWidth: 1.5,
-    borderColor: '#333',
+    borderColor: '#262626',
     borderStyle: 'dashed',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 18,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
   uploadCardLight: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FF9F0A',
+    backgroundColor: '#F8F9FA',
+    borderColor: '#D1D5DB',
   },
   uploadIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255, 159, 10, 0.15)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#1E1E1E',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -484,27 +571,72 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   uploadCardSubtitle: {
-    color: '#888888',
+    color: '#777777',
     fontSize: 13,
     textAlign: 'center',
   },
   previewContainer: {
-    height: 260,
-    backgroundColor: '#000',
-    borderRadius: 14,
+    width: '100%',
+    height: 280,
+    backgroundColor: '#0a0a0a',
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
     position: 'relative',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   previewVideo: {
     width: '100%',
     height: '100%',
   },
+  multiVideoBar: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+  },
+  multiVideoScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  thumbnailPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20, 20, 20, 0.85)',
+    borderRadius: 14,
+    paddingLeft: 10,
+    paddingRight: 6,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    gap: 6,
+  },
+  thumbnailPillActive: {
+    backgroundColor: '#FF9F0A',
+    borderColor: '#FF9F0A',
+  },
+  thumbnailPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  thumbnailPillText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  thumbnailPillTextActive: {
+    color: '#000000',
+  },
+  removePillBtn: {
+    marginLeft: 2,
+  },
   changeVideoBtn: {
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
@@ -520,14 +652,21 @@ const styles = StyleSheet.create({
   formGroup: {
     marginBottom: 18,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   label: {
     color: '#AAAAAA',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 6,
   },
-  labelLight: {
-    color: '#333333',
+  optionalBadge: {
+    color: '#777777',
+    fontSize: 11,
+    fontStyle: 'italic',
   },
   input: {
     backgroundColor: '#161616',
@@ -538,11 +677,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
     borderColor: '#2A2A2A',
-  },
-  inputLight: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E5EA',
-    color: '#000000',
   },
   textArea: {
     height: 80,
