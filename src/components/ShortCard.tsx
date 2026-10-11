@@ -98,19 +98,12 @@ export const ShortCard: React.FC<ShortCardProps> = ({
     }
   }, [isActive, player]);
 
-  // Handle tap / double tap
-  const handleCardPress = () => {
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300;
+  // Dedicated single tap timer to cleanly separate single-tap pause from double-tap like
+  const tapTimerRef = useRef<any>(null);
 
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap triggered
-      if (!video.isLiked) {
-        onLike();
-      }
-      triggerHeartAnimation();
-    } else {
-      // Single tap -> toggle play/pause
+
+  const togglePlayPause = () => {
+    try {
       if (player.playing) {
         player.pause();
         setIsPlaying(false);
@@ -120,8 +113,36 @@ export const ShortCard: React.FC<ShortCardProps> = ({
         setIsPlaying(true);
         setShowPlayIcon(false);
       }
+    } catch (err) {
+      console.warn('Error toggling play/pause:', err);
     }
-    lastTapRef.current = now;
+  };
+
+  const handleCardPress = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_GAP = 280;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_GAP) {
+      // Double tap detected: cancel single tap play/pause toggle
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+        tapTimerRef.current = null;
+      }
+      if (!video.isLiked) {
+        onLike();
+      }
+      triggerHeartAnimation();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+      }
+      tapTimerRef.current = setTimeout(() => {
+        togglePlayPause();
+        tapTimerRef.current = null;
+      }, 200);
+    }
   };
 
   const triggerHeartAnimation = () => {
@@ -140,6 +161,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
       }),
     ]).start();
   };
+
 
   return (
     <TouchableWithoutFeedback onPress={handleCardPress}>
