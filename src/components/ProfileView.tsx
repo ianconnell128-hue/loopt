@@ -101,7 +101,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Upload Action Banner */}
       <TouchableOpacity style={styles.uploadBanner} activeOpacity={0.8} onPress={onOpenUpload}>
-        <Ionicons name="cloud-upload" size={20} color="#FF0000" />
+        <Ionicons name="cloud-upload" size={20} color="#FF9F0A" />
         <Text style={styles.uploadBannerText}>Upload New Short</Text>
       </TouchableOpacity>
 
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     borderWidth: 2,
-    borderColor: '#FF0000',
+    borderColor: '#FF9F0A',
   },
   infoCol: {
     flex: 1,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   saveBtn: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',

@@ -88,7 +88,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             <View style={styles.handle} />
             <View style={styles.titleRow}>
               <View style={styles.titleWithIcon}>
-                <Ionicons name="cloud-download-outline" size={22} color="#FF0000" />
+                <Ionicons name="cloud-download-outline" size={22} color="#FF9F0A" />
                 <Text style={[styles.title, !isDarkMode && styles.titleLight]}>
                   Loopt Updates & GitHub Sync
                 </Text>
@@ -111,7 +111,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               <View style={styles.divider} />
               <View>
                 <Text style={styles.versionLabel}>LATEST ON GITHUB</Text>
-                <Text style={[styles.versionVal, { color: '#3EA6FF' }]}>
+                <Text style={[styles.versionVal, { color: '#FFD60A' }]}>
                   {updateInfo?.latestVersion || 'Checking...'}
                 </Text>
               </View>
@@ -146,7 +146,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             {updateInfo && (
               <View style={[styles.infoCard, !isDarkMode && styles.infoCardLight]}>
                 <View style={styles.infoCardHeader}>
-                  <Ionicons name="git-commit-outline" size={18} color="#FF0000" />
+                  <Ionicons name="git-commit-outline" size={18} color="#FF9F0A" />
                   <Text style={[styles.releaseTitle, !isDarkMode && styles.releaseTitleLight]}>
                     {updateInfo.releaseTitle}
                   </Text>
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   refreshBtn: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     padding: 8,
     borderRadius: 8,
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressPercent: {
-    color: '#3EA6FF',
+    color: '#FFD60A',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -399,11 +399,11 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     borderRadius: 4,
   },
   primaryBtn: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',

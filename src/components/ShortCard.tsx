@@ -211,7 +211,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
             <Image source={{ uri: video.creator.avatarUrl }} style={styles.avatar} />
             <Text style={styles.username}>{video.creator.username}</Text>
             <View style={styles.creatorBadge}>
-              <Ionicons name="checkmark-circle" size={13} color="#3EA6FF" />
+              <Ionicons name="checkmark-circle" size={13} color="#FFD60A" />
               <Text style={styles.creatorBadgeText}>Channel Owner</Text>
             </View>
           </View>
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(62, 166, 255, 0.3)',
   },
   creatorBadgeText: {
-    color: '#3EA6FF',
+    color: '#FFD60A',
     fontSize: 11,
     fontWeight: '700',
   },

@@ -91,7 +91,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
           {/* Comments List */}
           {loading ? (
             <View style={styles.centerBox}>
-              <ActivityIndicator color="#FF0000" />
+              <ActivityIndicator color="#FF9F0A" />
             </View>
           ) : comments.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   sendBtn: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     width: 38,
     height: 38,
     borderRadius: 19,

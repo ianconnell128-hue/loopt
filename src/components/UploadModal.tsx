@@ -185,7 +185,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           ) : (
             <TouchableOpacity style={styles.uploadCard} activeOpacity={0.8} onPress={handlePickVideo}>
               <View style={styles.uploadIconCircle}>
-                <Ionicons name="cloud-upload-outline" size={42} color="#FF0000" />
+                <Ionicons name="cloud-upload-outline" size={42} color="#FF9F0A" />
               </View>
               <Text style={styles.uploadCardTitle}>Select Video to Upload</Text>
               <Text style={styles.uploadCardSubtitle}>Choose vertical MP4 or videos from your device</Text>
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   publishBtn: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 18,

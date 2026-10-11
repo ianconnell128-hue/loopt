@@ -78,7 +78,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Ionicons
                   name={isDark ? 'moon' : 'sunny'}
                   size={20}
-                  color={isDark ? '#3EA6FF' : '#FF9500'}
+                  color={isDark ? '#FFD60A' : '#FF9500'}
                 />
                 <View>
                   <Text style={[styles.settingLabel, !isDark && styles.settingLabelLight]}>
@@ -92,7 +92,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Switch
                 value={isDark}
                 onValueChange={(val) => onUpdateSettings({ isDarkMode: val })}
-                trackColor={{ false: '#767577', true: '#FF0000' }}
+                trackColor={{ false: '#767577', true: '#FF9F0A' }}
                 thumbColor="#FFFFFF"
               />
             </View>
@@ -118,7 +118,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Switch
                 value={settings.autoplaySound}
                 onValueChange={(val) => onUpdateSettings({ autoplaySound: val })}
-                trackColor={{ false: '#767577', true: '#FF0000' }}
+                trackColor={{ false: '#767577', true: '#FF9F0A' }}
                 thumbColor="#FFFFFF"
               />
             </View>
@@ -170,7 +170,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }}
             >
               <View style={styles.settingInfo}>
-                <Ionicons name="cloud-download-outline" size={20} color="#FF0000" />
+                <Ionicons name="cloud-download-outline" size={20} color="#FF9F0A" />
                 <View>
                   <Text style={[styles.settingLabel, !isDark && styles.settingLabelLight]}>
                     Check for Updates & Re-download
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   pillToggle: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#FF9F0A',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 14,

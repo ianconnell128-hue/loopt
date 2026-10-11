@@ -20,25 +20,25 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <View style={[styles.container, !isDarkMode && styles.containerLight]}>
-      {/* Shorts Tab */}
+      {/* Feed / Loops Tab */}
       <TouchableOpacity
         style={styles.navItem}
         activeOpacity={0.7}
         onPress={() => onSelectTab('shorts')}
       >
-        <MaterialCommunityIcons
-          name="youtube-subscription"
+        <Ionicons
+          name={currentTab === 'shorts' ? 'flame' : 'flame-outline'}
           size={24}
-          color={currentTab === 'shorts' ? activeColor : inactiveColor}
+          color={currentTab === 'shorts' ? '#FF9F0A' : inactiveColor}
         />
         <Text
           style={[
             styles.navText,
             !isDarkMode && styles.navTextLight,
-            currentTab === 'shorts' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+            currentTab === 'shorts' && { color: '#FF9F0A', fontWeight: '700' },
           ]}
         >
-          Shorts
+          Loops
         </Text>
       </TouchableOpacity>
 
@@ -70,8 +70,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         activeOpacity={0.8}
         onPress={onOpenUpload}
       >
-        <View style={[styles.uploadBtnCircle, !isDarkMode && styles.uploadBtnCircleLight]}>
-          <Ionicons name="add" size={28} color={isDarkMode ? '#000000' : '#FFFFFF'} />
+        <View style={styles.uploadBtnCircle}>
+          <Ionicons name="add" size={28} color="#000000" />
         </View>
       </TouchableOpacity>
 
@@ -84,13 +84,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <Ionicons
           name={currentTab === 'inbox' ? 'notifications' : 'notifications-outline'}
           size={22}
-          color={currentTab === 'inbox' ? activeColor : inactiveColor}
+          color={currentTab === 'inbox' ? '#FF9F0A' : inactiveColor}
         />
         <Text
           style={[
             styles.navText,
             !isDarkMode && styles.navTextLight,
-            currentTab === 'inbox' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+            currentTab === 'inbox' && { color: '#FF9F0A', fontWeight: '700' },
           ]}
         >
           Activity
@@ -106,13 +106,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <Ionicons
           name={currentTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
           size={23}
-          color={currentTab === 'profile' ? activeColor : inactiveColor}
+          color={currentTab === 'profile' ? '#FF9F0A' : inactiveColor}
         />
         <Text
           style={[
             styles.navText,
             !isDarkMode && styles.navTextLight,
-            currentTab === 'profile' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+            currentTab === 'profile' && { color: '#FF9F0A', fontWeight: '700' },
           ]}
         >
           You
@@ -168,11 +168,11 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FF9F0A',
     alignItems: 'center',
     justifyContent: 'center',
   },
   uploadBtnCircleLight: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FF9F0A',
   },
 });
