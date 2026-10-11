@@ -41,6 +41,7 @@ function MainScreen() {
     updateSettings,
     toggleLike,
     toggleRepost,
+    toggleBookmark,
     incrementShare,
     getComments,
     addComment,
@@ -49,6 +50,7 @@ function MainScreen() {
     resetAllTestData,
     appendMoreShuffledVideos,
   } = useShorts();
+
 
 
   const NAV_BAR_HEIGHT = 58;
@@ -174,9 +176,11 @@ function MainScreen() {
                     itemHeight={containerHeight}
                     onLike={() => toggleLike(item.id)}
                     onRepost={() => toggleRepost(item.id)}
+                    onBookmark={() => toggleBookmark(item.id)}
                     onOpenComments={() => setCommentVideo(item)}
                     onShare={() => handleShare(item)}
                   />
+
                 )}
                 pagingEnabled={false}
                 snapToInterval={containerHeight}

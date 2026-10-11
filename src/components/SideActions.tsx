@@ -1,15 +1,19 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+
 import { ShortVideo } from '../types';
 
 interface SideActionsProps {
   video: ShortVideo;
   onLike: () => void;
   onRepost: () => void;
+  onBookmark: () => void;
   onOpenComments: () => void;
   onShare: () => void;
 }
+
 
 function formatCount(num: number): string {
   if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
@@ -21,13 +25,19 @@ export const SideActions: React.FC<SideActionsProps> = ({
   video,
   onLike,
   onRepost,
+  onBookmark,
   onOpenComments,
   onShare,
 }) => {
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const repostAnim = useRef(new Animated.Value(1)).current;
+  const bookmarkAnim = useRef(new Animated.Value(1)).current;
 
   const handleLikePress = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {}
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.4,
@@ -44,6 +54,9 @@ export const SideActions: React.FC<SideActionsProps> = ({
   };
 
   const handleRepostPress = () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    } catch {}
     Animated.sequence([
       Animated.timing(repostAnim, {
         toValue: 1.35,
@@ -57,6 +70,25 @@ export const SideActions: React.FC<SideActionsProps> = ({
       }),
     ]).start();
     onRepost();
+  };
+
+  const handleBookmarkPress = () => {
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {}
+    Animated.sequence([
+      Animated.timing(bookmarkAnim, {
+        toValue: 1.35,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(bookmarkAnim, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onBookmark();
   };
 
   return (
@@ -87,6 +119,20 @@ export const SideActions: React.FC<SideActionsProps> = ({
         </Text>
       </TouchableOpacity>
 
+      {/* Bookmark / Saved Button */}
+      <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={handleBookmarkPress}>
+        <Animated.View style={{ transform: [{ scale: bookmarkAnim }] }}>
+          <Ionicons
+            name={video.isBookmarked ? 'bookmark' : 'bookmark-outline'}
+            size={32}
+            color={video.isBookmarked ? '#FF9F0A' : '#FFFFFF'}
+          />
+        </Animated.View>
+        <Text style={[styles.actionText, video.isBookmarked && { color: '#FF9F0A' }]}>
+          {video.isBookmarked ? 'Saved' : 'Save'}
+        </Text>
+      </TouchableOpacity>
+
       {/* Comments Button */}
       <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={onOpenComments}>
         <MaterialCommunityIcons name="comment-processing" size={34} color="#FFFFFF" />
@@ -98,6 +144,7 @@ export const SideActions: React.FC<SideActionsProps> = ({
         <Ionicons name="share-social" size={32} color="#FFFFFF" />
         <Text style={styles.actionText}>{formatCount(video.sharesCount)}</Text>
       </TouchableOpacity>
+
 
       {/* Remix / Audio Disc */}
       <TouchableOpacity style={styles.discBtn} activeOpacity={0.8}>

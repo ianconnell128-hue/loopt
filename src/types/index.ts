@@ -26,8 +26,12 @@ export interface ShortVideo {
   repostsCount?: number;
   isLiked?: boolean;
   isReposted?: boolean;
+  isBookmarked?: boolean;
+  tags?: string[];
+  soundId?: string;
   createdAt?: string;
 }
+
 
 export interface CommentItem {
   id: string;

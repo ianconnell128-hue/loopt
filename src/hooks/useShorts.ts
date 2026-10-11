@@ -187,6 +187,21 @@ function shuffleArray<T>(array: T[]): T[] {
     });
   }, []);
 
+  // Toggle bookmark / saved video state
+  const toggleBookmark = useCallback(async (videoId: string) => {
+    setVideos((prev) => {
+      const updated = prev.map((v) => {
+        if (v.id === videoId) {
+          return { ...v, isBookmarked: !v.isBookmarked };
+        }
+        return v;
+      });
+      AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updated)).catch(console.error);
+      return updated;
+    });
+  }, []);
+
+
   // Increment real share count
   const incrementShare = useCallback(async (videoId: string) => {
     setVideos((prev) => {
@@ -361,6 +376,7 @@ function shuffleArray<T>(array: T[]): T[] {
     updateSettings,
     toggleLike,
     toggleRepost,
+    toggleBookmark,
     incrementShare,
     getComments,
     addComment,
@@ -368,6 +384,7 @@ function shuffleArray<T>(array: T[]): T[] {
     addBatchVideos,
     resetAllTestData,
     appendMoreShuffledVideos,
+
     refreshVideos: loadVideos,
   };
 }

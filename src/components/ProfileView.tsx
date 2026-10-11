@@ -37,9 +37,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenSettings,
 }) => {
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
+  const [activeProfileTab, setActiveProfileTab] = useState<'videos' | 'saved'>('videos');
   const [displayName, setDisplayName] = useState<string>(profile.displayName);
   const [username, setUsername] = useState<string>(profile.username);
   const [bio, setBio] = useState<string>(profile.bio);
+
+  const displayedVideos = activeProfileTab === 'videos' ? videos : videos.filter((v) => v.isBookmarked);
+
 
   const totalLikes = videos.reduce((acc, v) => acc + (v.likesCount || 0), 0);
 
@@ -105,22 +109,67 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <Text style={styles.uploadBannerText}>Upload New Short</Text>
       </TouchableOpacity>
 
-      {/* Video Gallery Header */}
-      <View style={styles.sectionHeader}>
-        <Ionicons name="film-outline" size={18} color="#FFF" />
-        <Text style={styles.sectionTitle}>Your Shorts ({videos.length})</Text>
+      {/* Tabs Header: Videos vs Saved */}
+      <View style={styles.profileTabsBar}>
+        <TouchableOpacity
+          style={[styles.profileTabBtn, activeProfileTab === 'videos' && styles.profileTabBtnActive]}
+          onPress={() => setActiveProfileTab('videos')}
+        >
+          <Ionicons
+            name="film"
+            size={18}
+            color={activeProfileTab === 'videos' ? '#FF9F0A' : '#888'}
+          />
+          <Text
+            style={[
+              styles.profileTabText,
+              activeProfileTab === 'videos' && styles.profileTabTextActive,
+            ]}
+          >
+            Loops ({videos.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.profileTabBtn, activeProfileTab === 'saved' && styles.profileTabBtnActive]}
+          onPress={() => setActiveProfileTab('saved')}
+        >
+          <Ionicons
+            name="bookmark"
+            size={18}
+            color={activeProfileTab === 'saved' ? '#FF9F0A' : '#888'}
+          />
+          <Text
+            style={[
+              styles.profileTabText,
+              activeProfileTab === 'saved' && styles.profileTabTextActive,
+            ]}
+          >
+            Saved ({videos.filter((v) => v.isBookmarked).length})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Video Gallery Grid */}
-      {videos.length === 0 ? (
+      {displayedVideos.length === 0 ? (
         <View style={styles.emptyGrid}>
-          <Ionicons name="videocam-outline" size={48} color="#444" />
-          <Text style={styles.emptyGridTitle}>No videos posted yet</Text>
-          <Text style={styles.emptyGridSubtitle}>Tap Upload to add your first Short</Text>
+          <Ionicons
+            name={activeProfileTab === 'videos' ? 'videocam-outline' : 'bookmark-outline'}
+            size={48}
+            color="#444"
+          />
+          <Text style={styles.emptyGridTitle}>
+            {activeProfileTab === 'videos' ? 'No loops posted yet' : 'No saved loops'}
+          </Text>
+          <Text style={styles.emptyGridSubtitle}>
+            {activeProfileTab === 'videos'
+              ? 'Tap Upload to add your first Short'
+              : 'Tap the Save bookmark icon on any video to watch offline anytime'}
+          </Text>
         </View>
       ) : (
         <FlatList
-          data={videos}
+          data={displayedVideos}
           keyExtractor={(item) => item.id}
           numColumns={3}
           contentContainerStyle={styles.gridContent}
@@ -144,6 +193,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
         />
       )}
+
 
       {/* Edit Profile Modal */}
       <Modal visible={isEditOpen} animationType="slide" transparent onRequestClose={() => setIsEditOpen(false)}>
@@ -312,12 +362,41 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
+  profileTabsBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+    marginBottom: 16,
+  },
+  profileTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  profileTabBtnActive: {
+    borderBottomColor: '#FF9F0A',
+  },
+  profileTabText: {
+    color: '#888888',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  profileTabTextActive: {
+    color: '#FF9F0A',
+    fontWeight: '800',
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
   },
+
   sectionTitle: {
     color: '#FFFFFF',
     fontSize: 15,

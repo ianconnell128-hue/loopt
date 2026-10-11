@@ -69,11 +69,36 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setSelectedUri(result.assets[0].uri);
       }
+
     } catch (err) {
       console.error('Picker error:', err);
       Alert.alert('Error', 'Could not open video picker.');
     }
   };
+
+  const handleRecordVideo = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Camera Permission Required', 'Please enable camera access to record videos.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['videos'],
+        videoMaxDuration: 60,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedUri(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Camera recording error:', err);
+      Alert.alert('Camera Error', 'Could not open video camera.');
+    }
+  };
+
+
 
   const handlePublish = async () => {
     if (!selectedUri) {
@@ -263,6 +288,21 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <Ionicons name="sparkles" size={18} color="#FF9F0A" />
               </TouchableOpacity>
 
+              {/* In-App Camera Loop Recorder */}
+              <TouchableOpacity
+                style={[styles.uploadCard, { marginBottom: 12, borderColor: '#FF9F0A' }, !isDarkMode && styles.uploadCardLight]}
+                activeOpacity={0.8}
+                onPress={handleRecordVideo}
+              >
+                <View style={[styles.uploadIconCircle, { backgroundColor: 'rgba(255, 159, 10, 0.15)' }]}>
+                  <Ionicons name="videocam" size={34} color="#FF9F0A" />
+                </View>
+                <Text style={[styles.uploadCardTitle, !isDarkMode && styles.uploadCardTitleLight]}>
+                  Record Loop with Camera
+                </Text>
+                <Text style={styles.uploadCardSubtitle}>Record up to 60s video directly using your camera</Text>
+              </TouchableOpacity>
+
               {/* Manual Device Video Picker */}
               <TouchableOpacity
                 style={[styles.uploadCard, !isDarkMode && styles.uploadCardLight]}
@@ -270,15 +310,16 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 onPress={handlePickVideo}
               >
                 <View style={styles.uploadIconCircle}>
-                  <Ionicons name="cloud-upload-outline" size={38} color="#FF9F0A" />
+                  <Ionicons name="images-outline" size={34} color="#FF9F0A" />
                 </View>
                 <Text style={[styles.uploadCardTitle, !isDarkMode && styles.uploadCardTitleLight]}>
                   Select Video from Gallery
                 </Text>
-                <Text style={styles.uploadCardSubtitle}>Choose vertical MP4 or videos from your device</Text>
+                <Text style={styles.uploadCardSubtitle}>Choose vertical MP4 or saved videos from your device</Text>
               </TouchableOpacity>
             </>
           )}
+
 
           {/* Form Fields */}
           <View style={styles.formGroup}>

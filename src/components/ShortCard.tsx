@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { ShortVideo } from '../types';
+
 import { SideActions } from './SideActions';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -22,6 +24,7 @@ interface ShortCardProps {
   itemHeight: number;
   onLike: () => void;
   onRepost: () => void;
+  onBookmark: () => void;
   onOpenComments: () => void;
   onShare: () => void;
 }
@@ -32,9 +35,11 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   itemHeight,
   onLike,
   onRepost,
+  onBookmark,
   onOpenComments,
   onShare,
 }) => {
+
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [contentFitMode, setContentFitMode] = useState<'cover' | 'contain'>('contain');
@@ -118,9 +123,10 @@ export const ShortCard: React.FC<ShortCardProps> = ({
     }
   };
 
-  const handleCardPress = () => {
+  const handleCardPress = (e?: any) => {
     const now = Date.now();
     const DOUBLE_TAP_GAP = 280;
+    const touchX = e?.nativeEvent?.locationX ?? SCREEN_WIDTH / 2;
 
     if (now - lastTapRef.current < DOUBLE_TAP_GAP) {
       // Double tap detected: cancel single tap play/pause toggle
@@ -128,10 +134,31 @@ export const ShortCard: React.FC<ShortCardProps> = ({
         clearTimeout(tapTimerRef.current);
         tapTimerRef.current = null;
       }
-      if (!video.isLiked) {
-        onLike();
+
+      // Check if double tapped on left side (rewind) or right side (fast forward)
+      if (touchX < SCREEN_WIDTH * 0.3) {
+        // Rewind 5s
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          const current = player.currentTime || 0;
+          player.seekBy(-5);
+        } catch {}
+      } else if (touchX > SCREEN_WIDTH * 0.7) {
+        // Fast forward 5s
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          player.seekBy(5);
+        } catch {}
+      } else {
+        // Center double tap: Heart like!
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch {}
+        if (!video.isLiked) {
+          onLike();
+        }
+        triggerHeartAnimation();
       }
-      triggerHeartAnimation();
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
@@ -144,6 +171,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
       }, 200);
     }
   };
+
 
   const triggerHeartAnimation = () => {
     heartAnim.setValue(0);
@@ -204,14 +232,16 @@ export const ShortCard: React.FC<ShortCardProps> = ({
           <Ionicons name="heart" size={110} color="#FF2D55" />
         </Animated.View>
 
-        {/* Right Side Buttons (Like, Repost, Comments, Share, Disc) */}
+        {/* Right Side Buttons (Like, Repost, Bookmark, Comments, Share, Disc) */}
         <SideActions
           video={video}
           onLike={onLike}
           onRepost={onRepost}
+          onBookmark={onBookmark}
           onOpenComments={onOpenComments}
           onShare={onShare}
         />
+
 
         {/* Bottom Overlay Info (Creator, Title, Caption, Audio) */}
         <View style={styles.bottomInfoContainer}>
