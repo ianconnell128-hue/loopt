@@ -154,6 +154,23 @@ export function useShorts() {
     []
   );
 
+  // Toggle real repost state & count
+  const toggleRepost = useCallback(async (videoId: string) => {
+    setVideos((prev) => {
+      const updated = prev.map((v) => {
+        if (v.id === videoId) {
+          const isReposted = !v.isReposted;
+          const currentCount = v.repostsCount ?? 0;
+          const repostsCount = isReposted ? currentCount + 1 : Math.max(0, currentCount - 1);
+          return { ...v, isReposted, repostsCount };
+        }
+        return v;
+      });
+      AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updated)).catch(console.error);
+      return updated;
+    });
+  }, []);
+
   // Increment real share count
   const incrementShare = useCallback(async (videoId: string) => {
     setVideos((prev) => {
@@ -281,6 +298,7 @@ export function useShorts() {
     settings,
     updateSettings,
     toggleLike,
+    toggleRepost,
     incrementShare,
     getComments,
     addComment,

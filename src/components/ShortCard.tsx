@@ -21,6 +21,7 @@ interface ShortCardProps {
   isActive: boolean;
   itemHeight: number;
   onLike: () => void;
+  onRepost: () => void;
   onOpenComments: () => void;
   onShare: () => void;
 }
@@ -30,6 +31,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   isActive,
   itemHeight,
   onLike,
+  onRepost,
   onOpenComments,
   onShare,
 }) => {
@@ -196,10 +198,11 @@ export const ShortCard: React.FC<ShortCardProps> = ({
           <Ionicons name="heart" size={110} color="#FF2D55" />
         </Animated.View>
 
-        {/* Right Side Buttons (Like, Comments, Share, Disc) */}
+        {/* Right Side Buttons (Like, Repost, Comments, Share, Disc) */}
         <SideActions
           video={video}
           onLike={onLike}
+          onRepost={onRepost}
           onOpenComments={onOpenComments}
           onShare={onShare}
         />

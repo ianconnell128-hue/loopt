@@ -6,6 +6,7 @@ import { ShortVideo } from '../types';
 interface SideActionsProps {
   video: ShortVideo;
   onLike: () => void;
+  onRepost: () => void;
   onOpenComments: () => void;
   onShare: () => void;
 }
@@ -19,10 +20,12 @@ function formatCount(num: number): string {
 export const SideActions: React.FC<SideActionsProps> = ({
   video,
   onLike,
+  onRepost,
   onOpenComments,
   onShare,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const repostAnim = useRef(new Animated.Value(1)).current;
 
   const handleLikePress = () => {
     Animated.sequence([
@@ -40,6 +43,22 @@ export const SideActions: React.FC<SideActionsProps> = ({
     onLike();
   };
 
+  const handleRepostPress = () => {
+    Animated.sequence([
+      Animated.timing(repostAnim, {
+        toValue: 1.35,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(repostAnim, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onRepost();
+  };
+
   return (
     <View style={styles.container}>
       {/* Like Button */}
@@ -52,6 +71,20 @@ export const SideActions: React.FC<SideActionsProps> = ({
           />
         </Animated.View>
         <Text style={styles.actionText}>{formatCount(video.likesCount)}</Text>
+      </TouchableOpacity>
+
+      {/* Repost Button */}
+      <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={handleRepostPress}>
+        <Animated.View style={{ transform: [{ scale: repostAnim }] }}>
+          <MaterialCommunityIcons
+            name="repeat-variant"
+            size={34}
+            color={video.isReposted ? '#FFD60A' : '#FFFFFF'}
+          />
+        </Animated.View>
+        <Text style={[styles.actionText, video.isReposted && { color: '#FFD60A' }]}>
+          {formatCount(video.repostsCount ?? 0)}
+        </Text>
       </TouchableOpacity>
 
       {/* Comments Button */}

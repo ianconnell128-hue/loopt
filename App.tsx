@@ -36,6 +36,7 @@ function MainScreen() {
     settings,
     updateSettings,
     toggleLike,
+    toggleRepost,
     incrementShare,
     getComments,
     addComment,
@@ -105,8 +106,8 @@ function MainScreen() {
             {/* Top Bar Floating Header */}
             <View style={[styles.topHeader, { top: insets.top + 6 }]}>
               <View style={styles.topHeaderLeft}>
-                <Ionicons name="repeat" size={24} color="#FF0055" />
-                <Text style={styles.appTitle}>Loopr</Text>
+                <Ionicons name="repeat" size={24} color="#FF9F0A" />
+                <Text style={styles.appTitle}>Loopt</Text>
                 <View style={styles.userTagPill}>
                   <Text style={styles.userTagText}>{profile.username}</Text>
                 </View>
@@ -145,6 +146,7 @@ function MainScreen() {
                     isActive={index === activeIndex}
                     itemHeight={containerHeight}
                     onLike={() => toggleLike(item.id)}
+                    onRepost={() => toggleRepost(item.id)}
                     onOpenComments={() => setCommentVideo(item)}
                     onShare={() => handleShare(item)}
                   />

@@ -21,7 +21,9 @@ export interface ShortVideo {
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
+  repostsCount?: number;
   isLiked?: boolean;
+  isReposted?: boolean;
   createdAt?: string;
 }
 

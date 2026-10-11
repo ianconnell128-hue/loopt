@@ -24,7 +24,9 @@ export const INITIAL_VIDEOS: ShortVideo[] = [
     likesCount: 0,
     commentsCount: 0,
     sharesCount: 0,
+    repostsCount: 0,
     isLiked: false,
+    isReposted: false,
     createdAt: new Date().toISOString(),
   },
   {
@@ -41,7 +43,9 @@ export const INITIAL_VIDEOS: ShortVideo[] = [
     likesCount: 0,
     commentsCount: 0,
     sharesCount: 0,
+    repostsCount: 0,
     isLiked: false,
+    isReposted: false,
     createdAt: new Date().toISOString(),
   },
 ];
