@@ -23,6 +23,8 @@ interface ProfileViewProps {
   onUpdateProfile: (updated: Partial<UserProfile>) => Promise<void>;
   onSelectVideo: (index: number) => void;
   onOpenUpload: () => void;
+  isDarkMode?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -31,6 +33,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onUpdateProfile,
   onSelectVideo,
   onOpenUpload,
+  isDarkMode = true,
+  onOpenSettings,
 }) => {
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
   const [displayName, setDisplayName] = useState<string>(profile.displayName);
@@ -53,14 +57,31 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !isDarkMode && styles.containerLight]}>
       {/* Top Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{profile.username}</Text>
-        <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditOpen(true)}>
-          <Feather name="edit-3" size={18} color="#FFFFFF" />
-          <Text style={styles.editBtnText}>Edit Profile</Text>
-        </TouchableOpacity>
+        <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>
+          {profile.username}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity
+            style={[styles.editBtn, !isDarkMode && styles.editBtnLight]}
+            onPress={() => setIsEditOpen(true)}
+          >
+            <Feather name="edit-3" size={16} color={isDarkMode ? '#FFFFFF' : '#000000'} />
+            <Text style={[styles.editBtnText, !isDarkMode && styles.editBtnTextLight]}>
+              Edit Profile
+            </Text>
+          </TouchableOpacity>
+          {onOpenSettings && (
+            <TouchableOpacity
+              style={[styles.settingsBtn, !isDarkMode && styles.editBtnLight]}
+              onPress={onOpenSettings}
+            >
+              <Feather name="settings" size={18} color={isDarkMode ? '#FFFFFF' : '#000000'} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Profile Header Details */}
@@ -186,6 +207,9 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 16,
   },
+  containerLight: {
+    backgroundColor: '#FFFFFF',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -197,6 +221,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
   },
+  headerTitleLight: {
+    color: '#000000',
+  },
   editBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -206,10 +233,25 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
+  editBtnLight: {
+    backgroundColor: '#F2F2F7',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
   editBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
+  },
+  editBtnTextLight: {
+    color: '#000000',
+  },
+  settingsBtn: {
+    backgroundColor: '#262626',
+    padding: 7,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileCard: {
     flexDirection: 'row',

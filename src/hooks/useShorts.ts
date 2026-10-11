@@ -3,15 +3,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ShortVideo, UserProfile, CommentItem } from '../types';
 import { INITIAL_VIDEOS, USER_DEFAULT_PROFILE } from '../data/sampleVideos';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { AppSettings } from '../components/SettingsModal';
 
-const VIDEOS_STORAGE_KEY = '@shorts_user_videos_v2';
-const PROFILE_STORAGE_KEY = '@shorts_user_profile_v2';
-const COMMENTS_STORAGE_PREFIX = '@shorts_comments_v2_';
+const VIDEOS_STORAGE_KEY = '@shorts_user_videos_v3';
+const PROFILE_STORAGE_KEY = '@shorts_user_profile_v3';
+const COMMENTS_STORAGE_PREFIX = '@shorts_comments_v3_';
+const SETTINGS_STORAGE_KEY = '@shorts_app_settings_v3';
+
+const DEFAULT_SETTINGS: AppSettings = {
+  isDarkMode: true,
+  autoplaySound: true,
+  defaultFitMode: 'cover',
+};
 
 export function useShorts() {
   const [profile, setProfile] = useState<UserProfile>(USER_DEFAULT_PROFILE);
   const [videos, setVideos] = useState<ShortVideo[]>(INITIAL_VIDEOS);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Load Settings
+  const loadSettings = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (stored) {
+        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) });
+      }
+    } catch (err) {
+      console.warn('Error loading settings:', err);
+    }
+  }, []);
+
+  const updateSettings = async (newSettings: Partial<AppSettings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    try {
+      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    }
+  };
 
   // Load Profile
   const loadProfile = useCallback(async () => {
@@ -72,7 +103,6 @@ export function useShorts() {
             createdAt: item.created_at,
           }));
 
-          // Merge without duplicates
           const combined = [...localList];
           for (const rem of remoteList) {
             if (!combined.some((v) => v.id === rem.id)) {
@@ -84,7 +114,7 @@ export function useShorts() {
         }
       }
 
-      // Fallback: If user uploaded videos exist, show them; otherwise show initial
+      // Fallback
       if (localList.length > 0) {
         setVideos(localList);
       } else {
@@ -100,21 +130,12 @@ export function useShorts() {
   }, [profile]);
 
   useEffect(() => {
+    loadSettings();
     loadProfile();
     loadVideos();
-  }, [loadProfile, loadVideos]);
+  }, [loadSettings, loadProfile, loadVideos]);
 
-  // Persist video list helper
-  const saveVideos = async (updatedVideos: ShortVideo[]) => {
-    setVideos(updatedVideos);
-    try {
-      await AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updatedVideos));
-    } catch (err) {
-      console.error('AsyncStorage saveVideos error:', err);
-    }
-  };
-
-  // Toggle Like with REAL integers (0 or 1, or exact count)
+  // Toggle Like with REAL integers
   const toggleLike = useCallback(
     async (videoId: string) => {
       setVideos((prev) => {
@@ -147,7 +168,7 @@ export function useShorts() {
     });
   }, []);
 
-  // Comments for a specific video
+  // Comments for a specific video - 100% REAL comments only
   const getComments = useCallback(async (videoId: string): Promise<CommentItem[]> => {
     try {
       const stored = await AsyncStorage.getItem(COMMENTS_STORAGE_PREFIX + videoId);
@@ -210,7 +231,6 @@ export function useShorts() {
       createdAt: new Date().toISOString(),
     };
 
-    // If Supabase configured, upload record to database
     if (isSupabaseConfigured && supabase) {
       try {
         await supabase.from('videos').insert({
@@ -229,7 +249,6 @@ export function useShorts() {
       }
     }
 
-    // Save permanently in local state & AsyncStorage
     setVideos((prev) => {
       const updated = [fullVideo, ...prev];
       AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updated)).catch(console.error);
@@ -237,16 +256,36 @@ export function useShorts() {
     });
   };
 
+  // Reset all dummy/test data to clean slate
+  const resetAllTestData = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const purgeKeys = keys.filter(
+        (k) => k.startsWith('@shorts_comments') || k.startsWith('@shorts_user_videos')
+      );
+      for (const k of purgeKeys) {
+        await AsyncStorage.removeItem(k);
+      }
+      setVideos(INITIAL_VIDEOS);
+      await AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(INITIAL_VIDEOS));
+    } catch (err) {
+      console.warn('Purge error:', err);
+    }
+  };
+
   return {
     profile,
     updateProfile,
     videos,
     loading,
+    settings,
+    updateSettings,
     toggleLike,
     incrementShare,
     getComments,
     addComment,
     addVideo,
+    resetAllTestData,
     refreshVideos: loadVideos,
   };
 }

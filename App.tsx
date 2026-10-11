@@ -21,6 +21,7 @@ import { BottomNav } from './src/components/BottomNav';
 import { UploadModal } from './src/components/UploadModal';
 import { CommentsModal } from './src/components/CommentsModal';
 import { ProfileView } from './src/components/ProfileView';
+import { SettingsModal } from './src/components/SettingsModal';
 import { ShortVideo } from './src/types';
 
 function MainScreen() {
@@ -31,14 +32,16 @@ function MainScreen() {
     updateProfile,
     videos,
     loading,
+    settings,
+    updateSettings,
     toggleLike,
     incrementShare,
     getComments,
     addComment,
     addVideo,
+    resetAllTestData,
   } = useShorts();
 
-  // Bottom nav bar height
   const NAV_BAR_HEIGHT = 58;
   const [containerHeight, setContainerHeight] = useState<number>(windowHeight - NAV_BAR_HEIGHT);
   const [activeIndex, setActiveIndex] = useState<number>(0);
@@ -48,6 +51,7 @@ function MainScreen() {
 
   // Modals state
   const [isUploadVisible, setIsUploadVisible] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [commentVideo, setCommentVideo] = useState<ShortVideo | null>(null);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -86,12 +90,14 @@ function MainScreen() {
     }, 100);
   };
 
+  const isDark = settings.isDarkMode;
+
   return (
-    <View style={styles.screen}>
-      <StatusBar style="light" />
+    <View style={[styles.screen, !isDark && styles.screenLight]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Main Content Area */}
-      <View style={styles.feedWrapper} onLayout={onLayout}>
+      <View style={[styles.feedWrapper, !isDark && styles.feedWrapperLight]} onLayout={onLayout}>
         {currentTab === 'shorts' ? (
           <>
             {/* Top Bar Floating Header */}
@@ -107,8 +113,16 @@ function MainScreen() {
                 <TouchableOpacity
                   style={styles.headerIconBtn}
                   onPress={() => setIsUploadVisible(true)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Ionicons name="camera-outline" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerIconBtn}
+                  onPress={() => setIsSettingsOpen(true)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -133,16 +147,19 @@ function MainScreen() {
                     onShare={() => handleShare(item)}
                   />
                 )}
-                pagingEnabled
-                showsVerticalScrollIndicator={false}
+                pagingEnabled={false}
                 snapToInterval={containerHeight}
                 snapToAlignment="start"
                 decelerationRate="fast"
+                disableIntervalMomentum={true}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                overScrollMode="never"
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
                 initialNumToRender={2}
-                maxToRenderPerBatch={2}
-                windowSize={3}
+                maxToRenderPerBatch={1}
+                windowSize={2}
                 getItemLayout={(_, index) => ({
                   length: containerHeight,
                   offset: containerHeight * index,
@@ -158,16 +175,20 @@ function MainScreen() {
             onUpdateProfile={updateProfile}
             onSelectVideo={handleSelectVideoFromProfile}
             onOpenUpload={() => setIsUploadVisible(true)}
+            isDarkMode={isDark}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
         ) : (
-          /* Placeholder Screens for Subscriptions & Activity */
-          <View style={styles.tabPlaceholder}>
+          /* Placeholder Screens */
+          <View style={[styles.tabPlaceholder, !isDark && styles.tabPlaceholderLight]}>
             <Ionicons
               name={currentTab === 'subscriptions' ? 'albums' : 'notifications'}
               size={64}
-              color="#444"
+              color={isDark ? '#444' : '#BBB'}
             />
-            <Text style={styles.placeholderTitle}>{currentTab.toUpperCase()}</Text>
+            <Text style={[styles.placeholderTitle, !isDark && styles.placeholderTitleLight]}>
+              {currentTab.toUpperCase()}
+            </Text>
             <Text style={styles.placeholderSubtitle}>
               All channel notifications and feeds will appear here. Tap Shorts below to return.
             </Text>
@@ -186,6 +207,7 @@ function MainScreen() {
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         onOpenUpload={() => setIsUploadVisible(true)}
+        isDarkMode={isDark}
       />
 
       {/* Upload Video Modal */}
@@ -206,6 +228,15 @@ function MainScreen() {
           onAddComment={addComment}
         />
       )}
+
+      {/* Settings Modal */}
+      <SettingsModal
+        visible={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onUpdateSettings={updateSettings}
+        onResetData={resetAllTestData}
+      />
     </View>
   );
 }
@@ -223,10 +254,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  screenLight: {
+    backgroundColor: '#FFFFFF',
+  },
   feedWrapper: {
     flex: 1,
     backgroundColor: '#000000',
     position: 'relative',
+  },
+  feedWrapperLight: {
+    backgroundColor: '#FFFFFF',
   },
   topHeader: {
     position: 'absolute',
@@ -252,10 +289,12 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   userTagPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   userTagText: {
     color: '#FFF',
@@ -265,10 +304,14 @@ const styles = StyleSheet.create({
   topHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   headerIconBtn: {
-    padding: 4,
+    padding: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   loadingContainer: {
     flex: 1,
@@ -285,12 +328,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
+    backgroundColor: '#0F0F0F',
+  },
+  tabPlaceholderLight: {
+    backgroundColor: '#F2F2F7',
   },
   placeholderTitle: {
     color: '#FFF',
     fontSize: 20,
     fontWeight: '700',
     marginTop: 16,
+  },
+  placeholderTitleLight: {
+    color: '#000',
   },
   placeholderSubtitle: {
     color: '#777',

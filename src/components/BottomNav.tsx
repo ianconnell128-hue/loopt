@@ -6,15 +6,20 @@ interface BottomNavProps {
   currentTab: 'shorts' | 'subscriptions' | 'inbox' | 'profile';
   onSelectTab: (tab: 'shorts' | 'subscriptions' | 'inbox' | 'profile') => void;
   onOpenUpload: () => void;
+  isDarkMode?: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
   currentTab,
   onSelectTab,
   onOpenUpload,
+  isDarkMode = true,
 }) => {
+  const activeColor = isDarkMode ? '#FFFFFF' : '#000000';
+  const inactiveColor = isDarkMode ? '#8E8E8E' : '#71717A';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !isDarkMode && styles.containerLight]}>
       {/* Shorts Tab */}
       <TouchableOpacity
         style={styles.navItem}
@@ -24,9 +29,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <MaterialCommunityIcons
           name="youtube-subscription"
           size={24}
-          color={currentTab === 'shorts' ? '#FFFFFF' : '#8E8E8E'}
+          color={currentTab === 'shorts' ? activeColor : inactiveColor}
         />
-        <Text style={[styles.navText, currentTab === 'shorts' && styles.navTextActive]}>
+        <Text
+          style={[
+            styles.navText,
+            !isDarkMode && styles.navTextLight,
+            currentTab === 'shorts' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+          ]}
+        >
           Shorts
         </Text>
       </TouchableOpacity>
@@ -40,9 +51,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <Ionicons
           name={currentTab === 'subscriptions' ? 'albums' : 'albums-outline'}
           size={22}
-          color={currentTab === 'subscriptions' ? '#FFFFFF' : '#8E8E8E'}
+          color={currentTab === 'subscriptions' ? activeColor : inactiveColor}
         />
-        <Text style={[styles.navText, currentTab === 'subscriptions' && styles.navTextActive]}>
+        <Text
+          style={[
+            styles.navText,
+            !isDarkMode && styles.navTextLight,
+            currentTab === 'subscriptions' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+          ]}
+        >
           Subs
         </Text>
       </TouchableOpacity>
@@ -53,8 +70,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         activeOpacity={0.8}
         onPress={onOpenUpload}
       >
-        <View style={styles.uploadBtnCircle}>
-          <Ionicons name="add" size={28} color="#000000" />
+        <View style={[styles.uploadBtnCircle, !isDarkMode && styles.uploadBtnCircleLight]}>
+          <Ionicons name="add" size={28} color={isDarkMode ? '#000000' : '#FFFFFF'} />
         </View>
       </TouchableOpacity>
 
@@ -67,9 +84,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <Ionicons
           name={currentTab === 'inbox' ? 'notifications' : 'notifications-outline'}
           size={22}
-          color={currentTab === 'inbox' ? '#FFFFFF' : '#8E8E8E'}
+          color={currentTab === 'inbox' ? activeColor : inactiveColor}
         />
-        <Text style={[styles.navText, currentTab === 'inbox' && styles.navTextActive]}>
+        <Text
+          style={[
+            styles.navText,
+            !isDarkMode && styles.navTextLight,
+            currentTab === 'inbox' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+          ]}
+        >
           Activity
         </Text>
       </TouchableOpacity>
@@ -83,9 +106,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <Ionicons
           name={currentTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
           size={23}
-          color={currentTab === 'profile' ? '#FFFFFF' : '#8E8E8E'}
+          color={currentTab === 'profile' ? activeColor : inactiveColor}
         />
-        <Text style={[styles.navText, currentTab === 'profile' && styles.navTextActive]}>
+        <Text
+          style={[
+            styles.navText,
+            !isDarkMode && styles.navTextLight,
+            currentTab === 'profile' && (isDarkMode ? styles.navTextActive : styles.navTextActiveLight),
+          ]}
+        >
           You
         </Text>
       </TouchableOpacity>
@@ -96,13 +125,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 const styles = StyleSheet.create({
   container: {
     height: 58,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: '#000000',
     borderTopWidth: 1,
     borderTopColor: '#222',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 8,
+  },
+  containerLight: {
+    backgroundColor: '#FFFFFF',
+    borderTopColor: '#E5E5EA',
   },
   navItem: {
     alignItems: 'center',
@@ -115,8 +148,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500',
   },
+  navTextLight: {
+    color: '#71717A',
+  },
   navTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  navTextActiveLight: {
+    color: '#000000',
     fontWeight: '700',
   },
   uploadBtnWrapper: {
@@ -131,5 +171,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  uploadBtnCircleLight: {
+    backgroundColor: '#000000',
   },
 });
