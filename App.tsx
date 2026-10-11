@@ -45,7 +45,9 @@ function MainScreen() {
     addVideo,
     addBatchVideos,
     resetAllTestData,
+    appendMoreShuffledVideos,
   } = useShorts();
+
 
   const NAV_BAR_HEIGHT = 58;
   const [containerHeight, setContainerHeight] = useState<number>(windowHeight - NAV_BAR_HEIGHT);
@@ -169,12 +171,15 @@ function MainScreen() {
                 initialNumToRender={2}
                 maxToRenderPerBatch={1}
                 windowSize={2}
+                onEndReached={appendMoreShuffledVideos}
+                onEndReachedThreshold={0.6}
                 getItemLayout={(_, index) => ({
                   length: containerHeight,
                   offset: containerHeight * index,
                   index,
                 })}
               />
+
             )}
           </>
         ) : currentTab === 'profile' ? (

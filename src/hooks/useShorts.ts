@@ -67,6 +67,16 @@ export function useShorts() {
     }
   };
 
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
   // Load Videos
   const loadVideos = useCallback(async () => {
     try {
@@ -109,25 +119,27 @@ export function useShorts() {
               combined.push(rem);
             }
           }
-          setVideos(combined.length > 0 ? combined : INITIAL_VIDEOS);
+          const baseList = combined.length > 0 ? combined : INITIAL_VIDEOS;
+          setVideos(shuffleArray(baseList));
           return;
         }
       }
 
       // Fallback
       if (localList.length > 0) {
-        setVideos(localList);
+        setVideos(shuffleArray(localList));
       } else {
-        setVideos(INITIAL_VIDEOS);
+        setVideos(shuffleArray(INITIAL_VIDEOS));
         await AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(INITIAL_VIDEOS));
       }
     } catch (err) {
       console.warn('Error fetching videos:', err);
-      setVideos(INITIAL_VIDEOS);
+      setVideos(shuffleArray(INITIAL_VIDEOS));
     } finally {
       setLoading(false);
     }
   }, [profile]);
+
 
   useEffect(() => {
     loadSettings();
@@ -300,6 +312,28 @@ export function useShorts() {
     }
   };
 
+  // Infinite scroll generator: shuffles a new batch of videos with unique IDs and appends them
+  const appendMoreShuffledVideos = useCallback(() => {
+    setVideos((prev) => {
+      if (prev.length === 0) return prev;
+      // Extract unique base videos from existing list
+      const uniqueMap = new Map<string, ShortVideo>();
+      for (const v of prev) {
+        const rawKey = v.videoUri || v.title;
+        if (!uniqueMap.has(rawKey)) {
+          uniqueMap.set(rawKey, v);
+        }
+      }
+      const pool = Array.from(uniqueMap.values());
+      const shuffledBatch = shuffleArray(pool).map((v) => ({
+        ...v,
+        // assign a fresh instance ID so FlatList keys are unique and player tracks correctly
+        id: `${v.id}_loop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      }));
+      return [...prev, ...shuffledBatch];
+    });
+  }, []);
+
   return {
     profile,
     updateProfile,
@@ -315,6 +349,8 @@ export function useShorts() {
     addVideo,
     addBatchVideos,
     resetAllTestData,
+    appendMoreShuffledVideos,
     refreshVideos: loadVideos,
   };
 }
+
