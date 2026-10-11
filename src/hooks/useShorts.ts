@@ -85,7 +85,11 @@ function shuffleArray<T>(array: T[]): T[] {
       let localList: ShortVideo[] = [];
       if (stored) {
         localList = JSON.parse(stored);
+        // Clean out any legacy sample videos (short-1, short-2)
+        localList = localList.filter((v) => v.id !== 'short-1' && v.id !== 'short-2');
+        await AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(localList));
       }
+
 
       // 2. If Supabase configured, sync from DB
       if (isSupabaseConfigured && supabase) {

@@ -142,6 +142,24 @@ function MainScreen() {
                 <ActivityIndicator size="large" color="#FF0000" />
                 <Text style={styles.loadingText}>Loading Shorts...</Text>
               </View>
+            ) : videos.length === 0 ? (
+              <View style={[styles.tabPlaceholder, !isDark && styles.tabPlaceholderLight, { flex: 1, justifyContent: 'center' }]}>
+                <Ionicons name="film-outline" size={68} color="#FF9F0A" />
+                <Text style={[styles.placeholderTitle, !isDark && styles.placeholderTitleLight, { marginTop: 16 }]}>
+                  No Videos Yet
+                </Text>
+                <Text style={[styles.placeholderSubtitle, { maxWidth: 280, textAlign: 'center', marginTop: 8 }]}>
+                  Your feed is clean and ready. Tap the + button to upload or import your Snapchat videos.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.backToFeedBtn, { backgroundColor: '#FF9F0A', marginTop: 20 }]}
+                  onPress={() => setIsUploadVisible(true)}
+                >
+                  <Text style={[styles.backToFeedText, { color: '#000000', fontWeight: '800' }]}>
+                    Upload / Import Videos
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <FlatList
                 ref={flatListRef}
@@ -179,7 +197,6 @@ function MainScreen() {
                   index,
                 })}
               />
-
             )}
           </>
         ) : currentTab === 'profile' ? (
