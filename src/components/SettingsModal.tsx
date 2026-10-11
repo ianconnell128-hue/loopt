@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CURRENT_APP_VERSION } from '../lib/githubUpdater';
 
 export interface AppSettings {
   isDarkMode: boolean;
@@ -187,7 +188,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Text style={styles.sectionHeading}>ABOUT</Text>
             <View style={[styles.infoCard, !isDark && styles.infoCardLight]}>
               <Text style={[styles.infoCardText, !isDark && styles.infoCardTextLight]}>
-                Loopt v1.0 • Single Creator Edition
+                Loopt v{CURRENT_APP_VERSION} • Installed Version
               </Text>
               <Text style={styles.infoCardSubText}>Channel Owner: @ian</Text>
             </View>
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '75%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#000000',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: '#1A1A1A',
     alignItems: 'center',
   },
   headerLight: {
@@ -266,13 +267,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#141414',
     padding: 14,
     borderRadius: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#222222',
   },
   settingRowLight: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E5EA',
   },
   settingInfo: {
     flexDirection: 'row',

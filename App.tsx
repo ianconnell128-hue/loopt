@@ -41,6 +41,7 @@ function MainScreen() {
     getComments,
     addComment,
     addVideo,
+    addBatchVideos,
     resetAllTestData,
   } = useShorts();
 
@@ -104,7 +105,7 @@ function MainScreen() {
         {currentTab === 'shorts' ? (
           <>
             {/* Top Bar Floating Header */}
-            <View style={[styles.topHeader, { top: insets.top + 6 }]}>
+            <View style={[styles.topHeader, { top: Math.max(8, insets.top) }]}>
               <View style={styles.topHeaderLeft}>
                 <Ionicons name="repeat" size={24} color="#FF9F0A" />
                 <Text style={styles.appTitle}>Loopt</Text>
@@ -219,6 +220,9 @@ function MainScreen() {
         visible={isUploadVisible}
         onClose={() => setIsUploadVisible(false)}
         onUploadSuccess={(newVideo) => addVideo(newVideo)}
+        onBatchImport={(newVideos) => addBatchVideos(newVideos)}
+        userProfile={{ id: profile.id, username: profile.username, avatarUrl: profile.avatarUrl }}
+        isDarkMode={isDark}
       />
 
       {/* Real Comments Bottom Sheet */}
@@ -230,6 +234,7 @@ function MainScreen() {
           videoTitle={commentVideo.title}
           getComments={getComments}
           onAddComment={addComment}
+          isDarkMode={isDark}
         />
       )}
 

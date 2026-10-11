@@ -273,6 +273,16 @@ export function useShorts() {
     });
   };
 
+  // Add multiple videos at once (e.g. from Snapchat batch import)
+  const addBatchVideos = async (newVideos: ShortVideo[]) => {
+    if (!newVideos || newVideos.length === 0) return;
+    setVideos((prev) => {
+      const updated = [...newVideos, ...prev];
+      AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updated)).catch(console.error);
+      return updated;
+    });
+  };
+
   // Reset all dummy/test data to clean slate
   const resetAllTestData = async () => {
     try {
@@ -303,6 +313,7 @@ export function useShorts() {
     getComments,
     addComment,
     addVideo,
+    addBatchVideos,
     resetAllTestData,
     refreshVideos: loadVideos,
   };

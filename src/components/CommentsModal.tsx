@@ -22,6 +22,7 @@ interface CommentsModalProps {
   videoTitle: string;
   getComments: (videoId: string) => Promise<CommentItem[]>;
   onAddComment: (videoId: string, text: string) => Promise<CommentItem>;
+  isDarkMode?: boolean;
 }
 
 export const CommentsModal: React.FC<CommentsModalProps> = ({
@@ -31,6 +32,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
   videoTitle,
   getComments,
   onAddComment,
+  isDarkMode = true,
 }) => {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [input, setInput] = useState<string>('');
@@ -75,15 +77,15 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
       <View style={styles.backdrop}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.sheet}
+          style={[styles.sheet, !isDarkMode && styles.sheetLight]}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, !isDarkMode && styles.headerLight]}>
             <View style={styles.handle} />
             <View style={styles.titleRow}>
-              <Text style={styles.title}>Comments ({comments.length})</Text>
+              <Text style={[styles.title, !isDarkMode && styles.titleLight]}>Comments ({comments.length})</Text>
               <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
+                <Ionicons name="close" size={24} color={isDarkMode ? '#FFFFFF' : '#000000'} />
               </TouchableOpacity>
             </View>
           </View>
@@ -131,11 +133,11 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
           )}
 
           {/* Input Bar */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, !isDarkMode && styles.inputContainerLight]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, !isDarkMode && styles.inputLight]}
               placeholder="Add a real comment..."
-              placeholderTextColor="#888"
+              placeholderTextColor={isDarkMode ? '#888' : '#999'}
               value={input}
               onChangeText={setInput}
               onSubmitEditing={handleSend}
@@ -146,7 +148,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
               onPress={handleSend}
               disabled={!input.trim()}
             >
-              <Ionicons name="send" size={18} color="#FFFFFF" />
+              <Ionicons name="send" size={18} color="#000000" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -163,17 +165,23 @@ const styles = StyleSheet.create({
   },
   sheet: {
     height: '65%',
-    backgroundColor: '#181818',
+    backgroundColor: '#000000',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
+  },
+  sheetLight: {
+    backgroundColor: '#FFFFFF',
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#282828',
+    borderBottomColor: '#1A1A1A',
     alignItems: 'center',
+  },
+  headerLight: {
+    borderBottomColor: '#E5E5EA',
   },
   handle: {
     width: 40,
@@ -192,6 +200,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  titleLight: {
+    color: '#000000',
   },
   centerBox: {
     flex: 1,
@@ -267,17 +278,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#282828',
-    backgroundColor: '#1E1E1E',
+    borderTopColor: '#1A1A1A',
+    backgroundColor: '#000000',
+  },
+  inputContainerLight: {
+    borderTopColor: '#E5E5EA',
+    backgroundColor: '#FFFFFF',
   },
   input: {
     flex: 1,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#161616',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     color: '#FFFFFF',
     fontSize: 14,
+  },
+  inputLight: {
+    backgroundColor: '#F2F2F7',
+    color: '#000000',
   },
   sendBtn: {
     backgroundColor: '#FF9F0A',
@@ -289,6 +308,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   sendBtnDisabled: {
-    backgroundColor: '#444',
+    backgroundColor: '#333333',
   },
 });

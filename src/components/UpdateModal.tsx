@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '80%',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#000000',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: '#1A1A1A',
     alignItems: 'center',
   },
   headerLight: {

@@ -203,8 +203,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F0F',
-    paddingTop: 50,
+    backgroundColor: '#000000',
+    paddingTop: 24,
     paddingHorizontal: 16,
   },
   containerLight: {
