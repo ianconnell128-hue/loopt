@@ -67,46 +67,57 @@ export async function importSnapchatVideos(
   let targetAlbumId: string | undefined;
   try {
     const albums = await MediaLibrary.getAlbumsAsync();
-    const snapAlbum = albums.find(
-      (a) => a.title.toLowerCase().includes('snapchat') || a.title.toLowerCase().includes('snap')
-    );
-    if (snapAlbum) {
-      targetAlbumId = snapAlbum.id;
+    if (Array.isArray(albums)) {
+      const snapAlbum = albums.find(
+        (a) => a?.title && (a.title.toLowerCase().includes('snapchat') || a.title.toLowerCase().includes('snap'))
+      );
+      if (snapAlbum) {
+        targetAlbumId = snapAlbum.id;
+      }
     }
   } catch (err) {
     console.warn('Album scan warning:', err);
   }
 
   // 3. Query videos
-  const options: MediaLibrary.AssetsOptions = {
-    mediaType: 'video',
-    first: 100,
-    sortBy: ['creationTime', false], // newest first
-  };
-
-  if (targetAlbumId) {
-    options.album = targetAlbumId;
-  }
-
-  const result = await MediaLibrary.getAssetsAsync(options);
   const candidates: MediaLibrary.Asset[] = [];
-
-  for (const asset of result.assets) {
-    const name = (asset.filename || '').toLowerCase();
-    const uri = (asset.uri || '').toLowerCase();
-
-    // Matches if it's from Snapchat album, filename contains snapchat, or path contains snapchat
-    const isSnapchat =
-      Boolean(targetAlbumId) ||
-      name.includes('snapchat') ||
-      name.includes('snap') ||
-      uri.includes('snapchat') ||
-      uri.includes('snap');
-
-    if (isSnapchat) {
-      candidates.push(asset);
+  try {
+    // If we found a dedicated Snapchat album, query it first
+    if (targetAlbumId) {
+      const snapResult = await MediaLibrary.getAssetsAsync({
+        album: targetAlbumId,
+        mediaType: 'video',
+        first: 100,
+        sortBy: ['creationTime', false],
+      });
+      if (snapResult?.assets) {
+        candidates.push(...snapResult.assets);
+      }
     }
+
+    // Also query recent general videos in case saved to Camera Roll / DCIM
+    const generalResult = await MediaLibrary.getAssetsAsync({
+      mediaType: 'video',
+      first: 100,
+      sortBy: ['creationTime', false],
+    });
+
+    if (generalResult?.assets) {
+      for (const asset of generalResult.assets) {
+        if (candidates.some((c) => c.id === asset.id)) continue;
+
+        const name = (asset.filename || '').toLowerCase();
+        const uri = (asset.uri || '').toLowerCase();
+
+        if (name.includes('snapchat') || name.includes('snap') || uri.includes('snapchat') || uri.includes('snap')) {
+          candidates.push(asset);
+        }
+      }
+    }
+  } catch (queryErr) {
+    console.warn('Asset query error:', queryErr);
   }
+
 
   // 4. Filter duplicates
   const toImport = candidates.filter((asset) => !alreadyImported.has(asset.id));
@@ -116,11 +127,19 @@ export async function importSnapchatVideos(
   for (const asset of toImport) {
     try {
       // Get complete asset info for local uri
-      const info = await MediaLibrary.getAssetInfoAsync(asset.id);
-      const videoSourceUri = info.localUri || asset.uri;
+      let videoSourceUri = asset.uri;
+      try {
+        const info = await MediaLibrary.getAssetInfoAsync(asset.id);
+        if (info?.localUri) {
+          videoSourceUri = info.localUri;
+        }
+      } catch (infoErr) {
+        console.warn('getAssetInfoAsync warning, falling back to asset.uri:', infoErr);
+      }
 
       // Copy permanently into Loopt's private documentDirectory/shorts_media/ so it stays forever
       const permanentUri = await saveVideoPermanently(videoSourceUri);
+
 
       // Clean title from asset filename or date
       const cleanTitle = asset.filename
