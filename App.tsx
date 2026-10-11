@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Image,
+  Linking,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,11 +80,52 @@ function MainScreen() {
     itemVisiblePercentThreshold: 60,
   }).current;
 
+  // Handle deep link (e.g. loopt://video/<id> or https://ianconnell128-hue.github.io/loopt/?video=<id>)
+  useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      if (!url) return;
+      try {
+        let videoId: string | null = null;
+        if (url.includes('video=')) {
+          const match = url.match(/[?&]video=([^&#]+)/);
+          if (match && match[1]) videoId = decodeURIComponent(match[1]);
+        } else if (url.includes('loopt://video/')) {
+          videoId = url.replace('loopt://video/', '').split('?')[0].split('#')[0];
+        } else if (url.includes('loopt://v/')) {
+          videoId = url.replace('loopt://v/', '').split('?')[0].split('#')[0];
+        }
+
+        if (videoId && videos.length > 0) {
+          const targetIndex = videos.findIndex(v => v.id === videoId);
+          if (targetIndex !== -1) {
+            setCurrentTab('shorts');
+            setActiveIndex(targetIndex);
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({ index: targetIndex, animated: true });
+            }, 300);
+          }
+        }
+      } catch (e) {
+        console.warn('Error handling deep link URL:', e);
+      }
+    };
+
+    Linking.getInitialURL().then(handleUrl).catch(() => {});
+    const subscription = Linking.addEventListener('url', event => handleUrl(event.url));
+    return () => {
+      subscription.remove();
+    };
+  }, [videos]);
+
   const handleShare = async (video: ShortVideo) => {
     try {
       await incrementShare(video.id);
+      const shareUrl = `https://ianconnell128-hue.github.io/loopt/?video=${encodeURIComponent(video.id)}`;
+      const creatorName = video.creator?.username || profile.displayName;
       await Share.share({
-        message: `Watch "${video.title}" by ${profile.displayName} on Shorts! ${video.videoUri}`,
+        message: `Watch "${video.title}" by @${creatorName} on Loopt!\n\nOpen or install Loopt: ${shareUrl}`,
+        url: shareUrl,
+        title: `Loopt: ${video.title}`,
       });
     } catch (err) {
       console.warn('Share error:', err);
