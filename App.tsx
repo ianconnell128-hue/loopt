@@ -23,7 +23,9 @@ import { CommentsModal } from './src/components/CommentsModal';
 import { ProfileView } from './src/components/ProfileView';
 import { SettingsModal } from './src/components/SettingsModal';
 import { UpdateModal } from './src/components/UpdateModal';
+import { MessagesModal } from './src/components/MessagesModal';
 import { ShortVideo } from './src/types';
+
 
 function MainScreen() {
   const insets = useSafeAreaInsets();
@@ -56,7 +58,9 @@ function MainScreen() {
   const [isUploadVisible, setIsUploadVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState<boolean>(false);
   const [commentVideo, setCommentVideo] = useState<ShortVideo | null>(null);
+
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -210,10 +214,24 @@ function MainScreen() {
       {/* Bottom Navigation */}
       <BottomNav
         currentTab={currentTab}
-        onSelectTab={setCurrentTab}
+        onSelectTab={(tab) => {
+          if (tab === 'inbox') {
+            setIsMessagesOpen(true);
+          } else {
+            setCurrentTab(tab);
+          }
+        }}
         onOpenUpload={() => setIsUploadVisible(true)}
         isDarkMode={isDark}
       />
+
+      {/* Messages Modal */}
+      <MessagesModal
+        visible={isMessagesOpen}
+        onClose={() => setIsMessagesOpen(false)}
+        isDarkMode={isDark}
+      />
+
 
       {/* Upload Video Modal */}
       <UploadModal

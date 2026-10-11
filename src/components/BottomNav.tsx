@@ -75,14 +75,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         </View>
       </TouchableOpacity>
 
-      {/* Inbox / Activity */}
+      {/* Messages Tab */}
       <TouchableOpacity
         style={styles.navItem}
         activeOpacity={0.7}
         onPress={() => onSelectTab('inbox')}
       >
         <Ionicons
-          name={currentTab === 'inbox' ? 'notifications' : 'notifications-outline'}
+          name={currentTab === 'inbox' ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'}
           size={22}
           color={currentTab === 'inbox' ? '#FF9F0A' : inactiveColor}
         />
@@ -93,9 +93,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             currentTab === 'inbox' && { color: '#FF9F0A', fontWeight: '700' },
           ]}
         >
-          Activity
+          Messages
         </Text>
       </TouchableOpacity>
+
 
       {/* Profile Tab */}
       <TouchableOpacity

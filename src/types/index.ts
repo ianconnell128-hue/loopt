@@ -36,3 +36,27 @@ export interface CommentItem {
   likesCount: number;
   isLiked?: boolean;
 }
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  text: string;
+  createdAt: string;
+  isRead: boolean;
+  status: 'sending' | 'sent' | 'delivered' | 'read';
+}
+
+export interface ChatConversation {
+  id: string;
+  participantId: string;
+  participantName: string;
+  participantAvatar: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+  isOnline?: boolean;
+}
+
