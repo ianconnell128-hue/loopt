@@ -24,6 +24,7 @@ interface SettingsModalProps {
   settings: AppSettings;
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
   onResetData: () => void;
+  onOpenUpdateModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -32,6 +33,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
   onUpdateSettings,
   onResetData,
+  onOpenUpdateModal,
 }) => {
   const isDark = settings.isDarkMode;
 
@@ -156,6 +158,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             >
               <Ionicons name="trash-outline" size={18} color="#FF3B30" />
               <Text style={styles.dangerRowText}>Purge Old Test Comments & Cache</Text>
+            </TouchableOpacity>
+
+            {/* Updates Section */}
+            <Text style={styles.sectionHeading}>UPDATES & GITHUB SYNC</Text>
+            <TouchableOpacity
+              style={[styles.settingRow, !isDark && styles.settingRowLight]}
+              onPress={() => {
+                onClose();
+                onOpenUpdateModal?.();
+              }}
+            >
+              <View style={styles.settingInfo}>
+                <Ionicons name="cloud-download-outline" size={20} color="#FF0000" />
+                <View>
+                  <Text style={[styles.settingLabel, !isDark && styles.settingLabelLight]}>
+                    Check for Updates & Re-download
+                  </Text>
+                  <Text style={styles.settingDesc}>
+                    Read new code from GitHub & install latest APK
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={isDark ? '#888' : '#AAA'} />
             </TouchableOpacity>
 
             {/* About */}

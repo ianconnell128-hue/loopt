@@ -22,6 +22,7 @@ import { UploadModal } from './src/components/UploadModal';
 import { CommentsModal } from './src/components/CommentsModal';
 import { ProfileView } from './src/components/ProfileView';
 import { SettingsModal } from './src/components/SettingsModal';
+import { UpdateModal } from './src/components/UpdateModal';
 import { ShortVideo } from './src/types';
 
 function MainScreen() {
@@ -52,6 +53,7 @@ function MainScreen() {
   // Modals state
   const [isUploadVisible, setIsUploadVisible] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [commentVideo, setCommentVideo] = useState<ShortVideo | null>(null);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -236,6 +238,14 @@ function MainScreen() {
         settings={settings}
         onUpdateSettings={updateSettings}
         onResetData={resetAllTestData}
+        onOpenUpdateModal={() => setIsUpdateModalOpen(true)}
+      />
+
+      {/* GitHub Update & Re-download Modal */}
+      <UpdateModal
+        visible={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        isDarkMode={isDark}
       />
     </View>
   );
