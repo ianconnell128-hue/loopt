@@ -146,21 +146,45 @@ export async function downloadAndInstallUpdate(
       // Obtain FileProvider content URI (content://...)
       const contentUri = await FileSystem.getContentUriAsync(result.uri);
 
-      // Trigger native Android package installer sheet directly
-      // FLAG_GRANT_READ_URI_PERMISSION (1) | FLAG_ACTIVITY_NEW_TASK (268435456)
-      await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-        data: contentUri,
-        type: 'application/vnd.android.package-archive',
-        flags: 1 | 268435456,
-      });
+      // FLAG_GRANT_READ_URI_PERMISSION (1) | FLAG_ACTIVITY_NEW_TASK (268435456) | FLAG_ACTIVITY_CLEAR_TOP (67108864)
+      try {
+        await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
+          data: contentUri,
+          flags: 1 | 268435456,
+        });
+      } catch (e) {
+        // Fallback to standard VIEW intent
+        try {
+          await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+            data: contentUri,
+            type: 'application/vnd.android.package-archive',
+            flags: 1 | 268435456,
+          });
+        } catch (innerErr: any) {
+          // If Android security blocks it because "Install unknown apps" is disabled:
+          Alert.alert(
+            'Permission Required',
+            'To install updates inside Loopt, please enable "Allow from this source" in your phone Settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Open Settings',
+                onPress: () => {
+                  IntentLauncher.startActivityAsync('android.settings.MANAGE_UNKNOWN_APP_SOURCES');
+                },
+              },
+            ]
+          );
+        }
+      }
     } else {
       Alert.alert('Download Error', 'Download did not complete. Please try again.');
     }
   } catch (error: any) {
     console.error('In-app installer error:', error);
     Alert.alert(
-      'Installation Error',
-      'Could not open installer. If prompted, please allow Loopt permission to install unknown apps in your phone Settings.'
+      'Installation Notice',
+      error?.message || 'Could not launch package installer.'
     );
   }
 }
