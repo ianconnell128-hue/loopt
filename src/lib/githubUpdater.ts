@@ -3,8 +3,8 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import { Platform, Alert } from 'react-native';
 
 export const CURRENT_APP_VERSION = '1.0.0';
-export const DEFAULT_GITHUB_REPO = 'ianconnell128-hue/loopr';
-export const LOCAL_APK_SERVER = 'http://192.168.1.221:8888/Loopr.apk';
+export const DEFAULT_GITHUB_REPO = 'ianconnell128-hue/loopt';
+export const LOCAL_APK_SERVER = 'http://192.168.1.221:8888/Loopt.apk';
 
 export interface UpdateInfo {
   hasUpdate: boolean;
@@ -23,14 +23,14 @@ export interface UpdateInfo {
  */
 export async function checkForAppUpdates(repoIdentifier: string = DEFAULT_GITHUB_REPO): Promise<UpdateInfo> {
   const cleanRepo = repoIdentifier.replace('https://github.com/', '').trim();
-  const [owner, repo] = cleanRepo.includes('/') ? cleanRepo.split('/') : ['ianconnell128-hue', cleanRepo || 'loopr'];
+  const [owner, repo] = cleanRepo.includes('/') ? cleanRepo.split('/') : ['ianconnell128-hue', cleanRepo || 'loopt'];
 
   try {
     // 1. Try GitHub Releases API
     const releaseRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        'User-Agent': 'Loopr-Updater',
+        'User-Agent': 'Loopt-Updater',
       },
     });
 
@@ -59,7 +59,7 @@ export async function checkForAppUpdates(repoIdentifier: string = DEFAULT_GITHUB
     const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        'User-Agent': 'Loopr-Updater',
+        'User-Agent': 'Loopt-Updater',
       },
     });
 
@@ -93,7 +93,7 @@ export async function checkForAppUpdates(repoIdentifier: string = DEFAULT_GITHUB
     hasUpdate: true,
     currentVersion: CURRENT_APP_VERSION,
     latestVersion: '1.0.1 (Network Build)',
-    releaseTitle: 'Updated Loopr APK Ready',
+    releaseTitle: 'Updated Loopt APK Ready',
     releaseNotes: 'Direct update ready to install from your local IP build server.',
     apkDownloadUrl: LOCAL_APK_SERVER,
     source: 'local_server',
@@ -116,7 +116,7 @@ export async function downloadAndInstallUpdate(
     return;
   }
 
-  const destinationFile = `${FileSystem.documentDirectory}Loopr-update.apk`;
+  const destinationFile = `${FileSystem.documentDirectory}Loopt-update.apk`;
 
   try {
     // Delete old downloaded update if present
@@ -160,7 +160,7 @@ export async function downloadAndInstallUpdate(
     console.error('In-app installer error:', error);
     Alert.alert(
       'Installation Error',
-      'Could not open installer. If prompted, please allow Loopr permission to install unknown apps in your phone Settings.'
+      'Could not open installer. If prompted, please allow Loopt permission to install unknown apps in your phone Settings.'
     );
   }
 }
