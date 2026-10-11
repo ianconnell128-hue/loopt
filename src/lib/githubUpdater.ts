@@ -3,7 +3,7 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import { Platform, Alert } from 'react-native';
 
 export const CURRENT_APP_VERSION = '1.0.0';
-export const DEFAULT_GITHUB_REPO = 'thundergeek/loopr';
+export const DEFAULT_GITHUB_REPO = 'ianconnell128-hue/loopr';
 export const LOCAL_APK_SERVER = 'http://192.168.1.221:8888/Loopr.apk';
 
 export interface UpdateInfo {
@@ -23,7 +23,7 @@ export interface UpdateInfo {
  */
 export async function checkForAppUpdates(repoIdentifier: string = DEFAULT_GITHUB_REPO): Promise<UpdateInfo> {
   const cleanRepo = repoIdentifier.replace('https://github.com/', '').trim();
-  const [owner, repo] = cleanRepo.includes('/') ? cleanRepo.split('/') : ['thundergeek', cleanRepo || 'loopr'];
+  const [owner, repo] = cleanRepo.includes('/') ? cleanRepo.split('/') : ['ianconnell128-hue', cleanRepo || 'loopr'];
 
   try {
     // 1. Try GitHub Releases API
