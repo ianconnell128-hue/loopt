@@ -153,22 +153,6 @@ export const ShortCard: React.FC<ShortCardProps> = ({
           surfaceType="textureView"
         />
 
-        {/* Screen Fit Mode Toggle Button */}
-        <TouchableOpacity
-          style={styles.fitToggleBtn}
-          activeOpacity={0.8}
-          onPress={() => setContentFitMode(contentFitMode === 'cover' ? 'contain' : 'cover')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name={contentFitMode === 'cover' ? 'contract-outline' : 'expand-outline'}
-            size={18}
-            color="#FFFFFF"
-          />
-          <Text style={styles.fitToggleText}>
-            {contentFitMode === 'cover' ? 'Fill' : 'Fit'}
-          </Text>
-        </TouchableOpacity>
 
         {/* Play / Pause indicator icon */}
         {showPlayIcon && (
