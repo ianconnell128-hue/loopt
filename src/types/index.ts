@@ -5,7 +5,9 @@ export interface UserProfile {
   avatarUrl: string;
   bio: string;
   subscribersCount: number;
+  isCreated?: boolean;
 }
+
 
 export interface ShortVideo {
   id: string;

@@ -24,7 +24,9 @@ import { ProfileView } from './src/components/ProfileView';
 import { SettingsModal } from './src/components/SettingsModal';
 import { UpdateModal } from './src/components/UpdateModal';
 import { MessagesModal } from './src/components/MessagesModal';
+import { AuthModal } from './src/components/AuthModal';
 import { ShortVideo } from './src/types';
+
 
 
 function MainScreen() {
@@ -253,6 +255,14 @@ function MainScreen() {
         onClose={() => setIsMessagesOpen(false)}
         isDarkMode={isDark}
       />
+
+      {/* Account Creation Modal */}
+      <AuthModal
+        visible={!loading && !profile.isCreated}
+        onComplete={(newProfile) => updateProfile(newProfile)}
+        isDarkMode={isDark}
+      />
+
 
 
       {/* Upload Video Modal */}
