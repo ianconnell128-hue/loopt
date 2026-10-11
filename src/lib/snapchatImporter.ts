@@ -53,9 +53,12 @@ export async function importSnapchatVideos(
   userProfile: { id: string; username: string; avatarUrl: string }
 ): Promise<SnapchatScanResult> {
   // 1. Request camera roll permission
-  const perm = await MediaLibrary.requestPermissionsAsync();
+  let perm = await MediaLibrary.getPermissionsAsync();
   if (!perm.granted) {
-    throw new Error('Permission to access photo library was denied.');
+    perm = await MediaLibrary.requestPermissionsAsync();
+  }
+  if (!perm.granted) {
+    throw new Error('Permission to access photos and videos was not granted. Please allow access in Android Settings > Apps > Loopt > Permissions.');
   }
 
   const alreadyImported = await getImportedAssetIds();
