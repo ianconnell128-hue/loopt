@@ -107,10 +107,11 @@ export const ShortCard: React.FC<ShortCardProps> = ({
       <View style={[styles.container, { height: itemHeight }]}>
         {/* Fullscreen Video View */}
         <VideoView
-          style={StyleSheet.absoluteFill}
+          style={styles.videoView}
           player={player}
           contentFit="cover"
           nativeControls={false}
+          surfaceType="textureView"
         />
 
         {/* Play / Pause indicator icon */}
@@ -197,6 +198,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     position: 'relative',
     overflow: 'hidden',
+  },
+  videoView: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   centerIconOverlay: {
     position: 'absolute',

@@ -169,6 +169,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 player={previewPlayer}
                 nativeControls={true}
                 contentFit="contain"
+                surfaceType="textureView"
               />
               <TouchableOpacity style={styles.changeVideoBtn} onPress={handlePickVideo}>
                 <Ionicons name="refresh" size={16} color="#FFFFFF" />

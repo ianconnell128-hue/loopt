@@ -116,7 +116,6 @@ function MainScreen() {
                 initialNumToRender={2}
                 maxToRenderPerBatch={2}
                 windowSize={3}
-                removeClippedSubviews
               />
             )}
           </>
