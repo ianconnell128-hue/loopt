@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import { Platform, Alert } from 'react-native';
 
-export const CURRENT_APP_VERSION = '1.2.4';
+export const CURRENT_APP_VERSION = '1.2.5';
 export const DEFAULT_GITHUB_REPO = 'ianconnell128-hue/loopt';
 export const LOCAL_APK_SERVER = 'http://192.168.1.221:8888/Loopt.apk';
 

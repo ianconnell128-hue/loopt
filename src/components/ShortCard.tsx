@@ -139,6 +139,11 @@ export const ShortCard: React.FC<ShortCardProps> = ({
         const { dx, dy } = gestureState;
         return Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy);
       },
+      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+        const { dx, dy } = gestureState;
+        // Capture horizontal swipes before the parent vertical FlatList intercepts them!
+        return Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy) * 1.2;
+      },
       onPanResponderGrant: (evt) => {
         touchStartRef.current = {
           x: evt.nativeEvent.pageX,

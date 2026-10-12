@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
   Image,
   Linking,
+  ScrollView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +34,7 @@ import { ShortVideo } from './src/types';
 
 function MainScreen() {
   const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const {
     profile,
     updateProfile,

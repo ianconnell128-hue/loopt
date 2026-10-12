@@ -69,11 +69,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gesture) => {
-        // Capture swipe right (dx > 25 and horizontal > vertical)
         return gesture.dx > 25 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
       },
+      onMoveShouldSetPanResponderCapture: (_, gesture) => {
+        return gesture.dx > 20 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
+      },
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > 45 || gesture.vx > 0.4) {
+        if (gesture.dx > 40 || gesture.vx > 0.3) {
           try {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           } catch {}
