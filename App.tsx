@@ -226,6 +226,12 @@ function MainScreen() {
                     onBookmark={() => toggleBookmark(item.id)}
                     onOpenComments={() => setCommentVideo(item)}
                     onShare={() => handleShare(item)}
+                    onSwipeLeftToProfile={() => setCurrentTab('profile')}
+                    onSwipeRightToPrevious={() => {
+                      if (index > 0) {
+                        flatListRef.current?.scrollToIndex({ index: index - 1, animated: true });
+                      }
+                    }}
                   />
 
                 )}
@@ -261,6 +267,7 @@ function MainScreen() {
             onOpenUpload={() => setIsUploadVisible(true)}
             isDarkMode={isDark}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onSwipeRightToFeed={() => setCurrentTab('shorts')}
           />
         ) : (
           /* Placeholder Screens */

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Animated,
+  PanResponder,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +28,8 @@ interface ShortCardProps {
   onBookmark: () => void;
   onOpenComments: () => void;
   onShare: () => void;
+  onSwipeLeftToProfile?: () => void;
+  onSwipeRightToPrevious?: () => void;
 }
 
 export const ShortCard: React.FC<ShortCardProps> = ({
@@ -38,6 +41,8 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   onBookmark,
   onOpenComments,
   onShare,
+  onSwipeLeftToProfile,
+  onSwipeRightToPrevious,
 }) => {
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -173,6 +178,35 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   };
 
 
+  // Horizontal PanResponder for swiping left into Profile or swiping right
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only capture horizontal gestures that exceed vertical motion
+        const { dx, dy } = gestureState;
+        return Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.5;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const { dx, vx } = gestureState;
+        // Swipe Left (dx < -60) -> Open Profile
+        if (dx < -60 || vx < -0.6) {
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          } catch {}
+          onSwipeLeftToProfile?.();
+        }
+        // Swipe Right (dx > 60) -> Go back / previous
+        else if (dx > 60 || vx > 0.6) {
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          } catch {}
+          onSwipeRightToPrevious?.();
+        }
+      },
+    })
+  ).current;
+
   const triggerHeartAnimation = () => {
     heartAnim.setValue(0);
     Animated.sequence([
@@ -193,7 +227,10 @@ export const ShortCard: React.FC<ShortCardProps> = ({
 
   return (
     <TouchableWithoutFeedback onPress={handleCardPress}>
-      <View style={[styles.container, { height: itemHeight }]}>
+      <View
+        style={[styles.container, { height: itemHeight }]}
+        {...panResponder.panHandlers}
+      >
         {/* Fullscreen Video View */}
         <VideoView
           style={styles.videoView}

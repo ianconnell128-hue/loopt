@@ -25,6 +25,7 @@ interface ProfileViewProps {
   onOpenUpload: () => void;
   isDarkMode?: boolean;
   onOpenSettings?: () => void;
+  onSwipeRightToFeed?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -35,6 +36,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenUpload,
   isDarkMode = true,
   onOpenSettings,
+  onSwipeRightToFeed,
 }) => {
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
   const [activeProfileTab, setActiveProfileTab] = useState<'videos' | 'saved'>('videos');
@@ -64,9 +66,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     <View style={[styles.container, !isDarkMode && styles.containerLight]}>
       {/* Top Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>
-          {profile.username}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {onSwipeRightToFeed && (
+            <TouchableOpacity onPress={onSwipeRightToFeed} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#FFFFFF' : '#000000'} />
+            </TouchableOpacity>
+          )}
+          <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>
+            {profile.username}
+          </Text>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity
             style={[styles.editBtn, !isDarkMode && styles.editBtnLight]}
