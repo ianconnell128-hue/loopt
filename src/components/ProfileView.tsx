@@ -28,6 +28,8 @@ interface ProfileViewProps {
   isDarkMode?: boolean;
   onOpenSettings?: () => void;
   onSwipeRightToFeed?: () => void;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -39,6 +41,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isDarkMode = true,
   onOpenSettings,
   onSwipeRightToFeed,
+  onSwipeLeft,
+  onSwipeRight,
 }) => {
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
   const [activeProfileTab, setActiveProfileTab] = useState<'videos' | 'saved'>('videos');
@@ -64,22 +68,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setIsEditOpen(false);
   };
 
-  // Profile PanResponder for swiping right to return to feed
+  // Profile PanResponder for swiping horizontally
   const profilePanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gesture) => {
-        return gesture.dx > 25 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
+        return Math.abs(gesture.dx) > 25 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
       },
       onMoveShouldSetPanResponderCapture: (_, gesture) => {
-        return gesture.dx > 20 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
+        return Math.abs(gesture.dx) > 20 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
       },
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > 40 || gesture.vx > 0.3) {
+        if (gesture.dx > 35 || gesture.vx > 0.3) {
+          // Swiped Right -> Go to previous tab (Messages)
           try {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           } catch {}
-          onSwipeRightToFeed?.();
+          if (onSwipeRight) {
+            onSwipeRight();
+          } else {
+            onSwipeRightToFeed?.();
+          }
+        } else if (gesture.dx < -35 || gesture.vx < -0.3) {
+          // Swiped Left
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          } catch {}
+          onSwipeLeft?.();
         }
       },
     })

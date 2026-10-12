@@ -28,6 +28,8 @@ interface ShortCardProps {
   onBookmark: () => void;
   onOpenComments: () => void;
   onShare: () => void;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
   onSwipeLeftToProfile?: () => void;
   onSwipeRightToPrevious?: () => void;
 }
@@ -41,6 +43,8 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   onBookmark,
   onOpenComments,
   onShare,
+  onSwipeLeft,
+  onSwipeRight,
   onSwipeLeftToProfile,
   onSwipeRightToPrevious,
 }) => {
@@ -158,20 +162,28 @@ export const ShortCard: React.FC<ShortCardProps> = ({
         const distance = Math.sqrt(dx * dx + gestureState.dy * gestureState.dy);
 
         // Check horizontal swipe
-        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(gestureState.dy) * 1.2) {
-          if (dx < -40 || vx < -0.4) {
-            // Swipe Left -> Profile
+        if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(gestureState.dy) * 1.2) {
+          if (dx < -35 || vx < -0.3) {
+            // Swipe Left (gesture moving finger to the left)
             try {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             } catch {}
-            onSwipeLeftToProfile?.();
+            if (onSwipeLeft) {
+              onSwipeLeft();
+            } else {
+              onSwipeLeftToProfile?.();
+            }
             return;
-          } else if (dx > 40 || vx > 0.4) {
-            // Swipe Right -> Previous
+          } else if (dx > 35 || vx > 0.3) {
+            // Swipe Right (gesture moving finger to the right)
             try {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             } catch {}
-            onSwipeRightToPrevious?.();
+            if (onSwipeRight) {
+              onSwipeRight();
+            } else {
+              onSwipeRightToPrevious?.();
+            }
             return;
           }
         }

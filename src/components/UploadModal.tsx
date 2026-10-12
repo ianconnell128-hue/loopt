@@ -32,6 +32,7 @@ interface UploadModalProps {
   onBatchImport?: (videos: ShortVideo[]) => void;
   userProfile?: { id: string; username: string; avatarUrl: string };
   isDarkMode?: boolean;
+  isEmbedded?: boolean;
 }
 
 export const UploadModal: React.FC<UploadModalProps> = ({
@@ -41,6 +42,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   onBatchImport,
   userProfile = { id: 'my-account', username: '@ian', avatarUrl: '' },
   isDarkMode = true,
+  isEmbedded = false,
 }) => {
   const [selectedUris, setSelectedUris] = useState<string[]>([]);
   const [activePreviewIndex, setActivePreviewIndex] = useState<number>(0);
@@ -293,17 +295,20 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     onClose();
   };
 
-  return (
-    <Modal visible={visible} animationType="slide" onRequestClose={resetModal}>
-      <View style={[styles.container, !isDarkMode && styles.containerLight]}>
-        {/* Header */}
-        <View style={[styles.header, !isDarkMode && styles.headerLight]}>
+  const body = (
+    <View style={[styles.container, !isDarkMode && styles.containerLight, isEmbedded && { paddingTop: 0 }]}>
+      {/* Header */}
+      <View style={[styles.header, !isDarkMode && styles.headerLight]}>
+        {!isEmbedded ? (
           <TouchableOpacity onPress={resetModal}>
             <Ionicons name="close" size={26} color={isDarkMode ? '#FFFFFF' : '#000000'} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>
-            {selectedUris.length > 1 ? `Create ${selectedUris.length} Loops` : 'Create Loop'}
-          </Text>
+        ) : (
+          <Ionicons name="add-circle" size={24} color="#FF9F0A" />
+        )}
+        <Text style={[styles.headerTitle, !isDarkMode && styles.headerTitleLight]}>
+          {selectedUris.length > 1 ? `Create ${selectedUris.length} Loops` : 'Create Loop'}
+        </Text>
           <TouchableOpacity
             style={[styles.publishBtn, (selectedUris.length === 0 || isUploading) && styles.publishBtnDisabled]}
             disabled={selectedUris.length === 0 || isUploading}
@@ -472,6 +477,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </View>
         </ScrollView>
       </View>
+  );
+
+  if (isEmbedded) {
+    return body;
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={resetModal}>
+      {body}
     </Modal>
   );
 };

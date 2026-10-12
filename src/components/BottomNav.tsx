@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface BottomNavProps {
-  currentTab: 'shorts' | 'subscriptions' | 'inbox' | 'profile';
-  onSelectTab: (tab: 'shorts' | 'subscriptions' | 'inbox' | 'profile') => void;
+  currentTab: 'shorts' | 'subscriptions' | 'upload' | 'inbox' | 'profile';
+  onSelectTab: (tab: 'shorts' | 'subscriptions' | 'upload' | 'inbox' | 'profile') => void;
   onOpenUpload: () => void;
   isDarkMode?: boolean;
 }
@@ -68,9 +68,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       <TouchableOpacity
         style={styles.uploadBtnWrapper}
         activeOpacity={0.8}
-        onPress={onOpenUpload}
+        onPress={() => onSelectTab('upload')}
       >
-        <View style={styles.uploadBtnCircle}>
+        <View style={[styles.uploadBtnCircle, currentTab === 'upload' && { borderWidth: 2, borderColor: '#FFFFFF', transform: [{ scale: 1.08 }] }]}>
           <Ionicons name="add" size={28} color="#000000" />
         </View>
       </TouchableOpacity>

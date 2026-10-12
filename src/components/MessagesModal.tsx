@@ -35,6 +35,7 @@ interface MessagesModalProps {
   onClose: () => void;
   isDarkMode: boolean;
   currentProfile?: { id: string; username: string; displayName: string; avatarUrl: string };
+  isEmbedded?: boolean;
 }
 
 export const MessagesModal: React.FC<MessagesModalProps> = ({
@@ -42,6 +43,7 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
   onClose,
   isDarkMode,
   currentProfile = { id: 'user_ian', username: 'ian', displayName: 'Ian', avatarUrl: '' },
+  isEmbedded = false,
 }) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
@@ -329,71 +331,59 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
     );
   };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={false}
-      onRequestClose={() => {
-        if (activeConversation) {
-          setActiveConversation(null);
-        } else if (isSearching) {
-          setIsSearching(false);
-        } else {
-          onClose();
-        }
-      }}
-    >
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+  const content = (
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: headerBg }]}>
-          {activeConversation ? (
-            <TouchableOpacity
-              onPress={() => setActiveConversation(null)}
-              style={styles.backButton}
-            >
-              <Text style={[styles.backIcon, { color: '#FF9F0A' }]}>‹</Text>
-              <Image
-                source={{ uri: activeConversation.participantAvatar }}
-                style={styles.headerAvatar}
-              />
-              <View style={styles.headerTitleCol}>
-                <Text style={[styles.headerTitle, { color: textColor }]}>
-                  {activeConversation.participantName}
-                </Text>
-                <Text style={[styles.headerSubtitle, { color: '#FF9F0A' }]}>
-                  {simulatingTyping ? 'typing...' : 'Active now'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.inboxHeader}>
-              <View>
-                <Text style={[styles.headerTitle, { color: textColor }]}>Direct Messages</Text>
-                <Text style={[styles.headerSubtitle, { color: subtextColor }]}>
-                  Search users & add friends to text
-                </Text>
-              </View>
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  onPress={() => setIsSearching(!isSearching)}
-                  style={[styles.iconCircleBtn, { backgroundColor: isSearching ? '#FF9F0A' : 'rgba(150,150,150,0.15)' }]}
-                >
-                  <Ionicons
-                    name="search"
-                    size={18}
-                    color={isSearching ? '#000000' : textColor}
-                  />
-                </TouchableOpacity>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: headerBg }]}>
+        {activeConversation ? (
+          <TouchableOpacity
+            onPress={() => setActiveConversation(null)}
+            style={styles.backButton}
+          >
+            <Text style={[styles.backIcon, { color: '#FF9F0A' }]}>‹</Text>
+            <Image
+              source={{ uri: activeConversation.participantAvatar }}
+              style={styles.headerAvatar}
+            />
+            <View style={styles.headerTitleCol}>
+              <Text style={[styles.headerTitle, { color: textColor }]}>
+                {activeConversation.participantName}
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: '#FF9F0A' }]}>
+                {simulatingTyping ? 'typing...' : 'Active now'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.inboxHeader}>
+            <View>
+              <Text style={[styles.headerTitle, { color: textColor }]}>Direct Messages</Text>
+              <Text style={[styles.headerSubtitle, { color: subtextColor }]}>
+                Search users & add friends to text
+              </Text>
+            </View>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={() => setIsSearching(!isSearching)}
+                style={[styles.iconCircleBtn, { backgroundColor: isSearching ? '#FF9F0A' : 'rgba(150,150,150,0.15)' }]}
+              >
+                <Ionicons
+                  name="search"
+                  size={18}
+                  color={isSearching ? '#000000' : textColor}
+                />
+              </TouchableOpacity>
+              {!isEmbedded && (
                 <TouchableOpacity onPress={onClose} style={styles.iconCircleBtn}>
                   <Text style={[styles.closeText, { color: textColor }]}>✕</Text>
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
-          )}
-        </View>
+          </View>
+        )}
+      </View>
 
         {/* Main Body */}
         {activeConversation ? (
@@ -518,6 +508,28 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
           </View>
         )}
       </SafeAreaView>
+  );
+
+  if (isEmbedded) {
+    return content;
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={() => {
+        if (activeConversation) {
+          setActiveConversation(null);
+        } else if (isSearching) {
+          setIsSearching(false);
+        } else {
+          onClose();
+        }
+      }}
+    >
+      {content}
     </Modal>
   );
 };

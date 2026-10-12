@@ -14,10 +14,12 @@ import {
   Image,
   Linking,
   ScrollView,
+  PanResponder,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useShorts } from './src/hooks/useShorts';
 import { ShortCard } from './src/components/ShortCard';
 import { BottomNav } from './src/components/BottomNav';
@@ -59,7 +61,7 @@ function MainScreen() {
   const NAV_BAR_HEIGHT = 58;
   const [containerHeight, setContainerHeight] = useState<number>(windowHeight - NAV_BAR_HEIGHT);
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [currentTab, setCurrentTab] = useState<'shorts' | 'subscriptions' | 'inbox' | 'profile'>('shorts');
+  const [currentTab, setCurrentTab] = useState<'shorts' | 'subscriptions' | 'upload' | 'inbox' | 'profile'>('shorts');
 
   const flatListRef = useRef<FlatList<ShortVideo>>(null);
 
@@ -69,6 +71,56 @@ function MainScreen() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState<boolean>(false);
   const [commentVideo, setCommentVideo] = useState<ShortVideo | null>(null);
+
+  const TABS_ORDER: Array<'shorts' | 'subscriptions' | 'upload' | 'inbox' | 'profile'> = [
+    'shorts',
+    'subscriptions',
+    'upload',
+    'inbox',
+    'profile',
+  ];
+
+  const goToNextTab = () => {
+    const currentIndex = TABS_ORDER.indexOf(currentTab);
+    if (currentIndex < TABS_ORDER.length - 1) {
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch {}
+      setCurrentTab(TABS_ORDER[currentIndex + 1]);
+    }
+  };
+
+  const goToPrevTab = () => {
+    const currentIndex = TABS_ORDER.indexOf(currentTab);
+    if (currentIndex > 0) {
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch {}
+      setCurrentTab(TABS_ORDER[currentIndex - 1]);
+    }
+  };
+
+  // PanResponder for screens that don't have video/card responders (Subs, Upload screen, etc.)
+  const tabScreenPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        return Math.abs(gesture.dx) > 25 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
+      },
+      onMoveShouldSetPanResponderCapture: (_, gesture) => {
+        return Math.abs(gesture.dx) > 20 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx < -35 || gesture.vx < -0.3) {
+          // Swipe Left -> Next tab
+          goToNextTab();
+        } else if (gesture.dx > 35 || gesture.vx > 0.3) {
+          // Swipe Right -> Prev tab
+          goToPrevTab();
+        }
+      },
+    })
+  ).current;
 
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -220,21 +272,20 @@ function MainScreen() {
                 renderItem={({ item, index }) => (
                   <ShortCard
                     video={item}
-                    isActive={index === activeIndex}
+                    isActive={index === activeIndex && currentTab === 'shorts'}
                     itemHeight={containerHeight}
                     onLike={() => toggleLike(item.id)}
                     onRepost={() => toggleRepost(item.id)}
                     onBookmark={() => toggleBookmark(item.id)}
                     onOpenComments={() => setCommentVideo(item)}
                     onShare={() => handleShare(item)}
-                    onSwipeLeftToProfile={() => setCurrentTab('profile')}
-                    onSwipeRightToPrevious={() => {
+                    onSwipeLeft={goToNextTab}
+                    onSwipeRight={() => {
                       if (index > 0) {
                         flatListRef.current?.scrollToIndex({ index: index - 1, animated: true });
                       }
                     }}
                   />
-
                 )}
                 pagingEnabled={false}
                 snapToInterval={containerHeight}
@@ -259,38 +310,92 @@ function MainScreen() {
               />
             )}
           </>
-        ) : currentTab === 'profile' ? (
+        ) : currentTab === 'subscriptions' ? (
+          /* Subscriptions Screen with Left/Right Swipe */
+          <View
+            style={[styles.tabPlaceholder, !isDark && styles.tabPlaceholderLight]}
+            {...tabScreenPanResponder.panHandlers}
+          >
+            <Ionicons
+              name="albums-outline"
+              size={68}
+              color="#FF9F0A"
+            />
+            <Text style={[styles.placeholderTitle, !isDark && styles.placeholderTitleLight]}>
+              Subscriptions
+            </Text>
+            <Text style={styles.placeholderSubtitle}>
+              Channels and creators you follow will appear here. Swipe left to Post a Video, or swipe right to return to Loops.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+              <TouchableOpacity
+                style={[styles.backToFeedBtn, { backgroundColor: '#333' }]}
+                onPress={goToPrevTab}
+              >
+                <Text style={styles.backToFeedText}>‹ Loops</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.backToFeedBtn, { backgroundColor: '#FF9F0A' }]}
+                onPress={goToNextTab}
+              >
+                <Text style={[styles.backToFeedText, { color: '#000' }]}>Post Video ›</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : currentTab === 'upload' ? (
+          /* Post New Video Screen with Left/Right Swipe */
+          <View
+            style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
+            {...tabScreenPanResponder.panHandlers}
+          >
+            <UploadModal
+              visible={true}
+              isEmbedded={true}
+              onClose={() => setCurrentTab('shorts')}
+              onUploadSuccess={(newVideo) => {
+                addVideo(newVideo);
+                setCurrentTab('shorts');
+              }}
+              onBatchImport={(newVideos) => {
+                addBatchVideos(newVideos);
+                setCurrentTab('shorts');
+              }}
+              userProfile={{ id: profile.id, username: profile.username, avatarUrl: profile.avatarUrl }}
+              isDarkMode={isDark}
+            />
+          </View>
+        ) : currentTab === 'inbox' ? (
+          /* Messages Screen with Left/Right Swipe */
+          <View
+            style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
+            {...tabScreenPanResponder.panHandlers}
+          >
+            <MessagesModal
+              visible={true}
+              isEmbedded={true}
+              onClose={() => setCurrentTab('shorts')}
+              isDarkMode={isDark}
+              currentProfile={{
+                id: profile.id,
+                username: profile.username,
+                displayName: profile.displayName,
+                avatarUrl: profile.avatarUrl,
+              }}
+            />
+          </View>
+        ) : (
+          /* Profile Screen with Left/Right Swipe */
           <ProfileView
             profile={profile}
             videos={videos}
             onUpdateProfile={updateProfile}
             onSelectVideo={handleSelectVideoFromProfile}
-            onOpenUpload={() => setIsUploadVisible(true)}
+            onOpenUpload={() => setCurrentTab('upload')}
             isDarkMode={isDark}
             onOpenSettings={() => setIsSettingsOpen(true)}
-            onSwipeRightToFeed={() => setCurrentTab('shorts')}
+            onSwipeRight={goToPrevTab}
+            onSwipeLeft={() => {}}
           />
-        ) : (
-          /* Placeholder Screens */
-          <View style={[styles.tabPlaceholder, !isDark && styles.tabPlaceholderLight]}>
-            <Ionicons
-              name={currentTab === 'subscriptions' ? 'albums' : 'notifications'}
-              size={64}
-              color={isDark ? '#444' : '#BBB'}
-            />
-            <Text style={[styles.placeholderTitle, !isDark && styles.placeholderTitleLight]}>
-              {currentTab.toUpperCase()}
-            </Text>
-            <Text style={styles.placeholderSubtitle}>
-              All channel notifications and feeds will appear here. Tap Shorts below to return.
-            </Text>
-            <TouchableOpacity
-              style={styles.backToFeedBtn}
-              onPress={() => setCurrentTab('shorts')}
-            >
-              <Text style={styles.backToFeedText}>Back to Shorts</Text>
-            </TouchableOpacity>
-          </View>
         )}
       </View>
 
@@ -298,13 +403,12 @@ function MainScreen() {
       <BottomNav
         currentTab={currentTab}
         onSelectTab={(tab) => {
-          if (tab === 'inbox') {
-            setIsMessagesOpen(true);
-          } else {
-            setCurrentTab(tab);
-          }
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          } catch {}
+          setCurrentTab(tab);
         }}
-        onOpenUpload={() => setIsUploadVisible(true)}
+        onOpenUpload={() => setCurrentTab('upload')}
         isDarkMode={isDark}
       />
 
