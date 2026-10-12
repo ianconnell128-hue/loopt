@@ -261,8 +261,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         );
       } else {
         Alert.alert(
-          'No Snapchat Videos Found',
-          'Could not find any videos saved from Snapchat in your camera roll. Make sure you have exported or saved your Snapchat videos to your device.'
+          'No Snapchat Videos Auto-Detected',
+          'Could not auto-detect videos in a Snapchat folder. Would you like to pick them directly from your gallery?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Pick From Gallery',
+              onPress: handlePickVideos,
+            },
+          ]
         );
       }
     } catch (err: any) {

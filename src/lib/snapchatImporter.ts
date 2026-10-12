@@ -63,42 +63,55 @@ export async function importSnapchatVideos(
 
   const alreadyImported = await getImportedAssetIds();
 
-  // 2. Look for Snapchat album specifically, as well as general video assets
-  let targetAlbumId: string | undefined;
+  // 2. Look for Snapchat albums (Android stores in "Snapchat", "Snapchat Export", "Movies/Snapchat", "Pictures/Snapchat", "DCIM/Snapchat")
+  const targetAlbumIds: string[] = [];
   try {
     const albums = await MediaLibrary.getAlbumsAsync();
     if (Array.isArray(albums)) {
-      const snapAlbum = albums.find(
-        (a) => a?.title && (a.title.toLowerCase().includes('snapchat') || a.title.toLowerCase().includes('snap'))
-      );
-      if (snapAlbum) {
-        targetAlbumId = snapAlbum.id;
+      for (const a of albums) {
+        if (!a?.title) continue;
+        const lowerTitle = a.title.toLowerCase();
+        if (
+          lowerTitle.includes('snapchat') ||
+          lowerTitle.includes('snap') ||
+          lowerTitle === 'memories' ||
+          lowerTitle.includes('stories')
+        ) {
+          targetAlbumIds.push(a.id);
+        }
       }
     }
   } catch (err) {
     console.warn('Album scan warning:', err);
   }
 
-  // 3. Query videos
+  // 3. Query videos from all matching Snapchat albums first
   const candidates: MediaLibrary.Asset[] = [];
-  try {
-    // If we found a dedicated Snapchat album, query it first
-    if (targetAlbumId) {
+  for (const albumId of targetAlbumIds) {
+    try {
       const snapResult = await MediaLibrary.getAssetsAsync({
-        album: targetAlbumId,
+        album: albumId,
         mediaType: 'video',
-        first: 100,
+        first: 200,
         sortBy: ['creationTime', false],
       });
       if (snapResult?.assets) {
-        candidates.push(...snapResult.assets);
+        for (const asset of snapResult.assets) {
+          if (!candidates.some((c) => c.id === asset.id)) {
+            candidates.push(asset);
+          }
+        }
       }
+    } catch (e) {
+      console.warn('Album asset query error:', e);
     }
+  }
 
-    // Also query recent general videos in case saved to Camera Roll / DCIM
+  // 4. Query recent videos across the device (first 250) and inspect filename/uri/metadata
+  try {
     const generalResult = await MediaLibrary.getAssetsAsync({
       mediaType: 'video',
-      first: 100,
+      first: 250,
       sortBy: ['creationTime', false],
     });
 
@@ -109,13 +122,32 @@ export async function importSnapchatVideos(
         const name = (asset.filename || '').toLowerCase();
         const uri = (asset.uri || '').toLowerCase();
 
-        if (name.includes('snapchat') || name.includes('snap') || uri.includes('snapchat') || uri.includes('snap')) {
+        // Android Snapchat filename patterns:
+        // Snapchat-xxxx.mp4, snap_xxxx.mp4, Snap-xxxx.mp4, VID_xxxx_snapchat.mp4, or contained in Snapchat folder
+        const isSnapchatNamed =
+          name.includes('snapchat') ||
+          name.includes('snap') ||
+          uri.includes('snapchat') ||
+          uri.includes('/snap') ||
+          uri.includes('memories');
+
+        // Also check if duration is typical Snapchat clip (between 1 and 65 seconds)
+        // and has portrait orientation (height > width)
+        const isPortraitShort =
+          asset.duration &&
+          asset.duration > 0 &&
+          asset.duration <= 65 &&
+          asset.height &&
+          asset.width &&
+          asset.height > asset.width;
+
+        if (isSnapchatNamed || (targetAlbumIds.length === 0 && isPortraitShort)) {
           candidates.push(asset);
         }
       }
     }
   } catch (queryErr) {
-    console.warn('Asset query error:', queryErr);
+    console.warn('General asset query error:', queryErr);
   }
 
 
