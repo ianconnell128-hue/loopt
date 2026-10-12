@@ -1,9 +1,25 @@
 {
-  "version": 1,
   "videos": [
     {
+      "id": "short_1791829554911_0",
+      "title": "",
+      "description": "",
+      "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/short_1791829554911_0.mp4",
+      "creator": {
+        "id": "user_1791737941708_ianheehee",
+        "username": "@ianheehee",
+        "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200"
+      },
+      "songTitle": "Original Audio - You",
+      "likesCount": 0,
+      "commentsCount": 0,
+      "sharesCount": 0,
+      "isLiked": false,
+      "createdAt": "2026-10-12T18:25:56.681Z"
+    },
+    {
       "id": "loop-glowing-shamrock",
-      "title": "Glowing Emerald Shamrocks ✨🍀",
+      "title": "Glowing Emerald Shamrocks â¨ð",
       "description": "Hypnotic glowing clover streaks against deep black backdrop. #glow #neon #vibes",
       "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/glowing-shamrock.mp4",
       "creator": {
@@ -22,7 +38,7 @@
     },
     {
       "id": "loop-neon-startup",
-      "title": "Neon Cyberpunk Loop ⚡",
+      "title": "Neon Cyberpunk Loop â¡",
       "description": "Smooth futuristic animated wallpaper aesthetic in full motion.",
       "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/neon-startup.mp4",
       "creator": {
@@ -41,7 +57,7 @@
     },
     {
       "id": "loop-cliffside-view",
-      "title": "Cinematic Cliffside Ocean Sunset 🌊🌅",
+      "title": "Cinematic Cliffside Ocean Sunset ðð",
       "description": "Breathtaking coastal cliffs and endless horizon. One of my favorite spots ever recorded.",
       "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/cliffside-view.mp4",
       "creator": {
@@ -60,7 +76,7 @@
     },
     {
       "id": "loop-cinematic-splash",
-      "title": "Atmospheric Studio Intro 🎬🍿",
+      "title": "Atmospheric Studio Intro ð¬ð¿",
       "description": "Epic cinematic motion sequence rendered for mobile screens.",
       "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/cinematic-splash.mp4",
       "creator": {
@@ -79,7 +95,7 @@
     },
     {
       "id": "short-official-1",
-      "title": "Welcome to Loopt! ✨",
+      "title": "Welcome to Loopt! â¨",
       "description": "The brand new short-form loop sharing experience with cloud sync, messaging, and haptics.",
       "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/sample1.mp4",
       "creator": {
@@ -96,5 +112,6 @@
       "isLiked": false,
       "createdAt": "2026-10-11T18:00:00.000Z"
     }
-  ]
+  ],
+  "version": 1
 }
