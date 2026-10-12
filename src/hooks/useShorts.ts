@@ -4,6 +4,7 @@ import { ShortVideo, UserProfile, CommentItem } from '../types';
 import { INITIAL_VIDEOS, USER_DEFAULT_PROFILE } from '../data/sampleVideos';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { AppSettings } from '../components/SettingsModal';
+import { fetchCloudFeed, syncVideosToCloud, registerCloudUser } from '../lib/cloudSync';
 
 const VIDEOS_STORAGE_KEY = '@shorts_user_videos_v3';
 const PROFILE_STORAGE_KEY = '@shorts_user_profile_v3';
@@ -62,6 +63,14 @@ export function useShorts() {
     setProfile(newProfile);
     try {
       await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(newProfile));
+      registerCloudUser({
+        id: newProfile.id,
+        username: newProfile.username,
+        displayName: newProfile.displayName,
+        avatarUrl: newProfile.avatarUrl,
+        bio: newProfile.bio,
+        isFriend: true,
+      }).catch((e) => console.warn('Cloud user register:', e));
     } catch (err) {
       console.error('Failed to save profile:', err);
     }
@@ -91,47 +100,19 @@ function shuffleArray<T>(array: T[]): T[] {
       }
 
 
-      // 2. If Supabase configured, sync from DB
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from('videos')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          const remoteList: ShortVideo[] = data.map((item) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description || '',
-            videoUri: item.video_url,
-            creator: {
-              id: profile.id,
-              username: profile.username,
-              avatarUrl: profile.avatarUrl,
-            },
-            songTitle: item.song_title || `Original Audio - ${profile.displayName}`,
-            likesCount: item.likes_count || 0,
-            commentsCount: item.comments_count || 0,
-            sharesCount: item.shares_count || 0,
-            isLiked: false,
-            createdAt: item.created_at,
-          }));
-
-          const combined = [...localList];
-          for (const rem of remoteList) {
-            if (!combined.some((v) => v.id === rem.id)) {
-              combined.push(rem);
-            }
-          }
-          const baseList = combined.length > 0 ? combined : INITIAL_VIDEOS;
-          setVideos(shuffleArray(baseList));
-          return;
+      // 2. Fetch global cloud feed from GitHub
+      const cloudVideos = await fetchCloudFeed();
+      const combined = [...localList];
+      for (const cv of cloudVideos) {
+        if (!combined.some((v) => v.id === cv.id)) {
+          combined.push(cv);
         }
       }
 
-      // Fallback
-      if (localList.length > 0) {
-        setVideos(shuffleArray(localList));
+      // 3. Fallback / Update feed
+      if (combined.length > 0) {
+        setVideos(shuffleArray(combined));
+        await AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(combined));
       } else {
         setVideos(shuffleArray(INITIAL_VIDEOS));
         await AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(INITIAL_VIDEOS));
@@ -148,6 +129,31 @@ function shuffleArray<T>(array: T[]): T[] {
     loadSettings();
     loadProfile();
     loadVideos();
+
+    // Auto-poll cloud feed every 30 seconds to catch videos posted by other creators
+    const pollInterval = setInterval(() => {
+      fetchCloudFeed().then((cloudVideos) => {
+        if (cloudVideos && cloudVideos.length > 0) {
+          setVideos((prev) => {
+            let hasNew = false;
+            const updated = [...prev];
+            for (const cv of cloudVideos) {
+              if (!updated.some((v) => v.id === cv.id)) {
+                updated.unshift(cv);
+                hasNew = true;
+              }
+            }
+            if (hasNew) {
+              AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updated)).catch(console.error);
+              return updated;
+            }
+            return prev;
+          });
+        }
+      }).catch(() => {});
+    }, 30000);
+
+    return () => clearInterval(pollInterval);
   }, [loadSettings, loadProfile, loadVideos]);
 
 

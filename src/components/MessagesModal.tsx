@@ -28,17 +28,20 @@ import {
   receiveIncomingMessage,
 } from '../lib/chatStore';
 import { requestNotificationPermissions } from '../lib/notificationService';
+import { sendCloudMessage, pollCloudMessages, searchCloudUsers } from '../lib/cloudSync';
 
 interface MessagesModalProps {
   visible: boolean;
   onClose: () => void;
   isDarkMode: boolean;
+  currentProfile?: { id: string; username: string; displayName: string; avatarUrl: string };
 }
 
 export const MessagesModal: React.FC<MessagesModalProps> = ({
   visible,
   onClose,
   isDarkMode,
+  currentProfile = { id: 'user_ian', username: 'ian', displayName: 'Ian', avatarUrl: '' },
 }) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
@@ -67,8 +70,22 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
     if (visible) {
       requestNotificationPermissions();
       loadData();
+
+      // Poll GitHub cloud messages every 5 seconds for instant cross-device updates & push notifications
+      const pollTimer = setInterval(() => {
+        pollCloudMessages(currentProfile.id, async (cloudMsg) => {
+          if (activeConversation && cloudMsg.conversationId === activeConversation.id) {
+            setMessages((prev) => [...prev, cloudMsg]);
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          }
+          const convs = await loadConversations();
+          setConversations(convs);
+        });
+      }, 5000);
+
+      return () => clearInterval(pollTimer);
     }
-  }, [visible]);
+  }, [visible, activeConversation, currentProfile.id]);
 
   const loadData = async () => {
     setLoading(true);
@@ -83,8 +100,16 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
       setSearchResults([]);
       return;
     }
-    const results = await searchUsersByUsername(text);
-    setSearchResults(results);
+    const localResults = await searchUsersByUsername(text);
+    const cloudResults = await searchCloudUsers(text);
+    // Combine unique users
+    const combined = [...localResults];
+    for (const cu of cloudResults) {
+      if (!combined.some(u => u.username.toLowerCase() === cu.username.toLowerCase())) {
+        combined.push(cu);
+      }
+    }
+    setSearchResults(combined);
   };
 
   const handleAddFriend = async (user: UserContact) => {
@@ -144,6 +169,14 @@ export const MessagesModal: React.FC<MessagesModalProps> = ({
     );
     setMessages((prev) => [...prev, message]);
     setConversations(updatedConversations);
+
+    // Sync to GitHub cloud so other person receives it instantly
+    sendCloudMessage({
+      ...message,
+      senderId: currentProfile.id,
+      senderName: currentProfile.displayName || currentProfile.username,
+      senderAvatar: currentProfile.avatarUrl,
+    }).catch((e) => console.warn('Cloud message send error:', e));
 
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });

@@ -305,6 +305,12 @@ function MainScreen() {
         visible={isMessagesOpen}
         onClose={() => setIsMessagesOpen(false)}
         isDarkMode={isDark}
+        currentProfile={{
+          id: profile.id,
+          username: profile.username,
+          displayName: profile.displayName,
+          avatarUrl: profile.avatarUrl,
+        }}
       />
 
       {/* Account Creation Modal */}

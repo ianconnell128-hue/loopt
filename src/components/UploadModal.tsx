@@ -18,6 +18,7 @@ import { ShortVideo } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { saveVideoPermanently } from '../lib/videoStorage';
 import { importSnapchatVideos } from '../lib/snapchatImporter';
+import { uploadVideoFileToGitHub, syncVideosToCloud } from '../lib/cloudSync';
 
 interface UploadModalProps {
   visible: boolean;
@@ -168,42 +169,23 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
       for (let i = 0; i < selectedUris.length; i++) {
         const rawUri = selectedUris[i];
-        // 1. Save permanently to device documentDirectory so it is never deleted
+        // 1. Save permanently to device documentDirectory
         const permanentUri = await saveVideoPermanently(rawUri);
         let finalVideoUrl = permanentUri;
+        const videoId = `short_${Date.now()}_${i}`;
 
-        // 2. If Supabase is connected, upload video file
-        if (isSupabaseConfigured && supabase) {
-          try {
-            const fileExt = rawUri.split('.').pop() || 'mp4';
-            const fileName = `${Date.now()}_${i}.${fileExt}`;
-            const filePath = `user_uploads/${fileName}`;
-
-            const response = await fetch(permanentUri);
-            const blob = await response.blob();
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('videos')
-              .upload(filePath, blob, {
-                contentType: 'video/mp4',
-                upsert: false,
-              });
-
-            if (!uploadError && uploadData) {
-              const { data: publicUrlData } = supabase.storage
-                .from('videos')
-                .getPublicUrl(uploadData.path);
-              if (publicUrlData?.publicUrl) {
-                finalVideoUrl = publicUrlData.publicUrl;
-              }
-            }
-          } catch (storageErr) {
-            console.warn('Remote upload failed, keeping permanent local file:', storageErr);
+        // 2. Upload video file to GitHub repository (loopt-cloud/videos/) so anyone can stream it
+        try {
+          const cloudVideoUrl = await uploadVideoFileToGitHub(permanentUri, videoId);
+          if (cloudVideoUrl && cloudVideoUrl.startsWith('http')) {
+            finalVideoUrl = cloudVideoUrl;
           }
+        } catch (gitErr) {
+          console.warn('GitHub video sync warning:', gitErr);
         }
 
         const videoItem: ShortVideo = {
-          id: `short_${Date.now()}_${i}`,
+          id: videoId,
           title: title.trim(), // Optional! If empty, title is empty
           description: description.trim(),
           videoUri: finalVideoUrl,
@@ -222,6 +204,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
         createdVideos.push(videoItem);
       }
+
+      // Sync to GitHub cloud feed.json so other users' apps receive it automatically
+      syncVideosToCloud(createdVideos).catch((e) => console.warn('Cloud feed sync:', e));
 
       if (createdVideos.length === 1) {
         onUploadSuccess({
