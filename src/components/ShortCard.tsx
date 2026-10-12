@@ -35,6 +35,7 @@ interface ShortCardProps {
   isSubscribed?: boolean;
   onToggleSubscribe?: () => void;
   isOwnVideo?: boolean;
+  onUseSound?: (sound: { title: string; videoUri?: string }) => void;
 }
 
 export const ShortCard: React.FC<ShortCardProps> = ({
@@ -53,6 +54,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   isSubscribed = false,
   onToggleSubscribe,
   isOwnVideo = false,
+  onUseSound,
 }) => {
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -363,13 +365,31 @@ export const ShortCard: React.FC<ShortCardProps> = ({
             </TouchableOpacity>
           ) : null}
 
-          {/* Audio Tag */}
-          <View style={styles.audioRow}>
-            <Ionicons name="musical-notes" size={15} color="#fff" />
+          {/* Audio Tag - Interactive to reuse sound */}
+          <TouchableOpacity
+            style={styles.audioRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              } catch {}
+              if (onUseSound) {
+                onUseSound({
+                  title: video.songTitle || `Sound from @${video.creator?.username || 'creator'}`,
+                  videoUri: video.videoUri,
+                });
+              }
+            }}
+          >
+            <Ionicons name="musical-notes" size={15} color="#FFD60A" />
             <Text style={styles.audioText} numberOfLines={1}>
               {video.songTitle || 'Original Audio'}
             </Text>
-          </View>
+            <View style={styles.useSoundBadge}>
+              <Ionicons name="sparkles" size={10} color="#000" />
+              <Text style={styles.useSoundBadgeText}>Use Sound</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
   );
@@ -519,11 +539,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 2,
     gap: 6,
+    flexWrap: 'wrap',
   },
   audioText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '500',
     opacity: 0.9,
+    maxWidth: SCREEN_WIDTH * 0.5,
+  },
+  useSoundBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD60A',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 3,
+  },
+  useSoundBadgeText: {
+    color: '#000000',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

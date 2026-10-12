@@ -33,6 +33,9 @@ interface UploadModalProps {
   userProfile?: { id: string; username: string; avatarUrl: string };
   isDarkMode?: boolean;
   isEmbedded?: boolean;
+  availableVideos?: ShortVideo[];
+  initialSelectedSound?: { title: string; videoUri?: string } | null;
+  onClearInitialSound?: () => void;
 }
 
 export const UploadModal: React.FC<UploadModalProps> = ({
@@ -43,12 +46,21 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   userProfile = { id: 'my-account', username: '@ian', avatarUrl: '' },
   isDarkMode = true,
   isEmbedded = false,
+  availableVideos = [],
+  initialSelectedSound = null,
+  onClearInitialSound,
 }) => {
   const [selectedUris, setSelectedUris] = useState<string[]>([]);
   const [activePreviewIndex, setActivePreviewIndex] = useState<number>(0);
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [songTitle, setSongTitle] = useState<string>('Original Audio - You');
+  const [songTitle, setSongTitle] = useState<string>(
+    initialSelectedSound?.title || 'Original Audio - You'
+  );
+  const [soundPickerVisible, setSoundPickerVisible] = useState<boolean>(false);
+  const [selectedSoundAudioUri, setSelectedSoundAudioUri] = useState<string | null>(
+    initialSelectedSound?.videoUri || null
+  );
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isImportingSnapchat, setIsImportingSnapchat] = useState<boolean>(false);
 
@@ -473,15 +485,148 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Sound / Music Name (Optional)</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Sound / Audio Track</Text>
+              <TouchableOpacity
+                onPress={() => setSoundPickerVisible(true)}
+                style={styles.browseSoundsBtn}
+              >
+                <Ionicons name="musical-notes" size={13} color="#FF9F0A" />
+                <Text style={styles.browseSoundsBtnText}>Choose from Loops</Text>
+              </TouchableOpacity>
+            </View>
+
+            {songTitle !== 'Original Audio - You' && (
+              <View style={styles.activeSoundPill}>
+                <Ionicons name="disc" size={16} color="#FFD60A" />
+                <Text style={styles.activeSoundPillText} numberOfLines={1}>
+                  {songTitle}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSongTitle('Original Audio - You');
+                    setSelectedSoundAudioUri(null);
+                    onClearInitialSound?.();
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close-circle" size={16} color="#AAA" />
+                </TouchableOpacity>
+              </View>
+            )}
+
             <TextInput
               style={styles.input}
-              placeholder="Audio track title"
+              placeholder="Audio track title (e.g. Original Audio, Song Name)"
               placeholderTextColor="#777"
               value={songTitle}
               onChangeText={setSongTitle}
             />
           </View>
+
+          {/* Sound Picker Sheet / Modal */}
+          <Modal
+            visible={soundPickerVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setSoundPickerVisible(false)}
+          >
+            <View style={styles.soundPickerOverlay}>
+              <View style={[styles.soundPickerSheet, !isDarkMode && styles.soundPickerSheetLight]}>
+                <View style={styles.soundPickerHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="musical-notes" size={20} color="#FF9F0A" />
+                    <Text style={[styles.soundPickerTitle, !isDarkMode && styles.soundPickerTitleLight]}>
+                      Select Audio from Loops
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setSoundPickerVisible(false)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close" size={22} color={isDarkMode ? '#FFF' : '#000'} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={{ maxHeight: 360 }}>
+                  <TouchableOpacity
+                    style={[styles.soundItemRow, !isDarkMode && styles.soundItemRowLight]}
+                    onPress={() => {
+                      setSongTitle('Original Audio - You');
+                      setSelectedSoundAudioUri(null);
+                      setSoundPickerVisible(false);
+                    }}
+                  >
+                    <View style={styles.soundIconCircle}>
+                      <Ionicons name="mic-outline" size={18} color="#FF9F0A" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.soundItemTitle, !isDarkMode && styles.soundItemTitleLight]}>
+                        Original Video Audio (Default)
+                      </Text>
+                      <Text style={styles.soundItemSubtitle}>Keep sound recorded with the video</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {Array.from(
+                    new Map(
+                      availableVideos
+                        .filter((v) => v.songTitle || v.videoUri)
+                        .map((v) => [
+                          (v.songTitle || `Sound from @${v.creator?.username || 'creator'}`).trim(),
+                          v,
+                        ])
+                    ).values()
+                  ).map((v) => {
+                    const soundName =
+                      v.songTitle?.trim() || `Sound from @${v.creator?.username || 'creator'}`;
+                    const isSelected = songTitle === soundName;
+                    return (
+                      <TouchableOpacity
+                        key={v.id}
+                        style={[
+                          styles.soundItemRow,
+                          !isDarkMode && styles.soundItemRowLight,
+                          isSelected && styles.soundItemSelectedRow,
+                        ]}
+                        onPress={() => {
+                          setSongTitle(soundName);
+                          setSelectedSoundAudioUri(v.videoUri);
+                          setSoundPickerVisible(false);
+                        }}
+                      >
+                        <View style={[styles.soundIconCircle, isSelected && { backgroundColor: '#FF9F0A' }]}>
+                          <Ionicons
+                            name="musical-notes"
+                            size={18}
+                            color={isSelected ? '#000' : '#FF9F0A'}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              styles.soundItemTitle,
+                              !isDarkMode && styles.soundItemTitleLight,
+                              isSelected && { color: '#FF9F0A', fontWeight: '700' },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {soundName}
+                          </Text>
+                          <Text style={styles.soundItemSubtitle}>
+                            by {v.creator?.username || '@creator'}
+                          </Text>
+                        </View>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={20} color="#FF9F0A" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
         </ScrollView>
       </View>
   );
@@ -732,5 +877,111 @@ const styles = StyleSheet.create({
   textArea: {
     height: 80,
     textAlignVertical: 'top',
+  },
+  browseSoundsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 159, 10, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  browseSoundsBtnText: {
+    color: '#FF9F0A',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  activeSoundPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: '#FFD60A',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 8,
+    gap: 8,
+  },
+  activeSoundPillText: {
+    color: '#FFD60A',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  soundPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  soundPickerSheet: {
+    backgroundColor: '#161616',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    borderTopWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  soundPickerSheetLight: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E5EA',
+  },
+  soundPickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#262626',
+    marginBottom: 10,
+  },
+  soundPickerTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  soundPickerTitleLight: {
+    color: '#000000',
+  },
+  soundItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 6,
+    backgroundColor: '#202020',
+    gap: 12,
+  },
+  soundItemRowLight: {
+    backgroundColor: '#F2F2F7',
+  },
+  soundItemSelectedRow: {
+    borderWidth: 1.5,
+    borderColor: '#FF9F0A',
+    backgroundColor: 'rgba(255, 159, 10, 0.1)',
+  },
+  soundIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2C2C2C',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soundItemTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  soundItemTitleLight: {
+    color: '#000000',
+  },
+  soundItemSubtitle: {
+    color: '#8E8E93',
+    fontSize: 12,
   },
 });

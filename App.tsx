@@ -73,6 +73,7 @@ function MainScreen() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState<boolean>(false);
   const [commentVideo, setCommentVideo] = useState<ShortVideo | null>(null);
+  const [selectedSound, setSelectedSound] = useState<{ title: string; videoUri?: string } | null>(null);
 
   const TABS_ORDER: Array<'shorts' | 'subscriptions' | 'upload' | 'inbox' | 'profile'> = [
     'shorts',
@@ -282,11 +283,7 @@ function MainScreen() {
                     onOpenComments={() => setCommentVideo(item)}
                     onShare={() => handleShare(item)}
                     onSwipeLeft={goToNextTab}
-                    onSwipeRight={() => {
-                      if (index > 0) {
-                        flatListRef.current?.scrollToIndex({ index: index - 1, animated: true });
-                      }
-                    }}
+                    onSwipeRight={goToPrevTab}
                     isSubscribed={
                       item.isSubscribed ||
                       subscribedCreatorIds.has(item.creator?.id) ||
@@ -299,6 +296,10 @@ function MainScreen() {
                       (Boolean(profile?.id) && item.creator?.id === profile.id) ||
                       (Boolean(profile?.username) && item.creator?.username === profile.username)
                     }
+                    onUseSound={(sound) => {
+                      setSelectedSound(sound);
+                      setCurrentTab('upload');
+                    }}
                   />
                 )}
                 pagingEnabled={false}
@@ -452,13 +453,18 @@ function MainScreen() {
             <UploadModal
               visible={true}
               isEmbedded={true}
+              availableVideos={videos}
+              initialSelectedSound={selectedSound}
+              onClearInitialSound={() => setSelectedSound(null)}
               onClose={() => setCurrentTab('shorts')}
               onUploadSuccess={(newVideo) => {
                 addVideo(newVideo);
+                setSelectedSound(null);
                 setCurrentTab('shorts');
               }}
               onBatchImport={(newVideos) => {
                 addBatchVideos(newVideos);
+                setSelectedSound(null);
                 setCurrentTab('shorts');
               }}
               userProfile={{ id: profile.id, username: profile.username, avatarUrl: profile.avatarUrl }}
@@ -539,8 +545,17 @@ function MainScreen() {
       <UploadModal
         visible={isUploadVisible}
         onClose={() => setIsUploadVisible(false)}
-        onUploadSuccess={(newVideo) => addVideo(newVideo)}
-        onBatchImport={(newVideos) => addBatchVideos(newVideos)}
+        availableVideos={videos}
+        initialSelectedSound={selectedSound}
+        onClearInitialSound={() => setSelectedSound(null)}
+        onUploadSuccess={(newVideo) => {
+          addVideo(newVideo);
+          setSelectedSound(null);
+        }}
+        onBatchImport={(newVideos) => {
+          addBatchVideos(newVideos);
+          setSelectedSound(null);
+        }}
         userProfile={{ id: profile.id, username: profile.username, avatarUrl: profile.avatarUrl }}
         isDarkMode={isDark}
       />
