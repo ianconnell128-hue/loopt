@@ -1,1 +1,60 @@
-{"videos": [], "version": 1}
+{
+  "version": 1,
+  "videos": [
+    {
+      "id": "short-official-1",
+      "title": "Welcome to Loopt! ✨",
+      "description": "The brand new short-form loop sharing experience. Continuous loops, haptic double taps, in-app camera, direct sharing and cloud sync! #loopt #new #trending",
+      "videoUri": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/loopt-cloud/videos/sample1.mp4",
+      "creator": {
+        "id": "creator-loopt-official",
+        "username": "@loopt",
+        "displayName": "Loopt Official",
+        "avatarUrl": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/assets/icon.png"
+      },
+      "songTitle": "Original Audio - Loopt Official",
+      "likesCount": 24800,
+      "commentsCount": 612,
+      "sharesCount": 1840,
+      "repostsCount": 350,
+      "isLiked": false,
+      "createdAt": "2026-10-11T20:00:00.000Z"
+    },
+    {
+      "id": "short-3",
+      "title": "Pure joy in nature 🌲🌿 Wild adventures",
+      "description": "Hiking deep into the valley trail. Never stop exploring! #nature #outdoors #shorts",
+      "videoUri": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
+      "creator": {
+        "id": "creator-3",
+        "username": "@wanderlust_clips",
+        "displayName": "Wanderlust",
+        "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"
+      },
+      "songTitle": "Golden Hour (Lofi Beat)",
+      "likesCount": 8930,
+      "commentsCount": 144,
+      "sharesCount": 512,
+      "isLiked": false,
+      "createdAt": "2026-10-11T19:30:00.000Z"
+    },
+    {
+      "id": "short-4",
+      "title": "Animated forest encounter 🐰🌳",
+      "description": "A classic animated short remastered for mobile feed! How cute is this? #animation #classic",
+      "videoUri": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "creator": {
+        "id": "creator-4",
+        "username": "@blender_studios",
+        "displayName": "Blender Studios",
+        "avatarUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+      },
+      "songTitle": "Morning Birds & Whistles",
+      "likesCount": 104500,
+      "commentsCount": 3120,
+      "sharesCount": 9400,
+      "isLiked": false,
+      "createdAt": "2026-10-11T19:00:00.000Z"
+    }
+  ]
+}

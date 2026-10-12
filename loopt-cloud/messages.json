@@ -1,1 +1,58 @@
-{"messages": [], "users": [], "version": 1}
+{
+  "version": 1,
+  "users": [
+    {
+      "id": "creator-loopt-official",
+      "username": "loopt",
+      "displayName": "Loopt Official",
+      "avatarUrl": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/assets/icon.png",
+      "bio": "Official Loopt channel ✨ The future of short loops",
+      "isFriend": true
+    },
+    {
+      "id": "user_alex",
+      "username": "alex",
+      "displayName": "Alex Rivera",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+      "bio": "Filmmaker & video editor 🎥",
+      "isFriend": false
+    },
+    {
+      "id": "user_sarah",
+      "username": "sarah",
+      "displayName": "Sarah Jenkins",
+      "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+      "bio": "Daily vlogger & coffee lover ☕",
+      "isFriend": false
+    },
+    {
+      "id": "user_jordan",
+      "username": "jordan",
+      "displayName": "Jordan Lee",
+      "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+      "bio": "Music creator & sound designer 🎵",
+      "isFriend": false
+    },
+    {
+      "id": "user_maya",
+      "username": "maya",
+      "displayName": "Maya Patel",
+      "avatarUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
+      "bio": "Animations and 3D loop graphics ✨",
+      "isFriend": false
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-welcome-loopt",
+      "conversationId": "conv-loopt-welcome",
+      "senderId": "creator-loopt-official",
+      "senderName": "Loopt Team",
+      "senderAvatar": "https://raw.githubusercontent.com/ianconnell128-hue/loopt/main/assets/icon.png",
+      "text": "Welcome to Loopt! Your videos, profile, and messages are now backed up to GitHub cloud. Have fun looping! 🚀",
+      "createdAt": "2026-10-11T20:00:00.000Z",
+      "isRead": false,
+      "status": "delivered"
+    }
+  ]
+}
