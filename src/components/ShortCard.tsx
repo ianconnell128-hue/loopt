@@ -32,6 +32,8 @@ interface ShortCardProps {
   onSwipeRight?: () => void;
   onSwipeLeftToProfile?: () => void;
   onSwipeRightToPrevious?: () => void;
+  isSubscribed?: boolean;
+  onToggleSubscribe?: () => void;
 }
 
 export const ShortCard: React.FC<ShortCardProps> = ({
@@ -47,6 +49,8 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   onSwipeRight,
   onSwipeLeftToProfile,
   onSwipeRightToPrevious,
+  isSubscribed = false,
+  onToggleSubscribe,
 }) => {
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -312,10 +316,31 @@ export const ShortCard: React.FC<ShortCardProps> = ({
           <View style={styles.creatorRow}>
             <Image source={{ uri: video.creator.avatarUrl }} style={styles.avatar} />
             <Text style={styles.username}>{video.creator.username}</Text>
-            <View style={styles.creatorBadge}>
-              <Ionicons name="checkmark-circle" size={13} color="#FFD60A" />
-              <Text style={styles.creatorBadgeText}>Channel Owner</Text>
-            </View>
+            
+            {onToggleSubscribe && (
+              <TouchableOpacity
+                style={[
+                  styles.subscribeBtn,
+                  isSubscribed && styles.subscribedBtn,
+                ]}
+                activeOpacity={0.8}
+                onPress={() => {
+                  try {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  } catch {}
+                  onToggleSubscribe();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.subscribeBtnText,
+                    isSubscribed && styles.subscribedBtnText,
+                  ]}
+                >
+                  {isSubscribed ? 'Subscribed ✓' : 'Subscribe'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Title & Caption */}
@@ -443,6 +468,28 @@ const styles = StyleSheet.create({
     color: '#FFD60A',
     fontSize: 11,
     fontWeight: '700',
+  },
+  subscribeBtn: {
+    backgroundColor: '#FF0000',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subscribedBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  subscribeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  subscribedBtnText: {
+    color: '#E0E0E0',
+    fontWeight: '600',
   },
   titleText: {
     color: '#FFFFFF',

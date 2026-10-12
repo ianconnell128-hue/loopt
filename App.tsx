@@ -54,6 +54,8 @@ function MainScreen() {
     addBatchVideos,
     resetAllTestData,
     appendMoreShuffledVideos,
+    subscribedCreatorIds,
+    toggleSubscribe,
   } = useShorts();
 
 
@@ -285,6 +287,14 @@ function MainScreen() {
                         flatListRef.current?.scrollToIndex({ index: index - 1, animated: true });
                       }
                     }}
+                    isSubscribed={
+                      item.isSubscribed ||
+                      subscribedCreatorIds.has(item.creator?.id) ||
+                      subscribedCreatorIds.has(item.creator?.username)
+                    }
+                    onToggleSubscribe={() =>
+                      toggleSubscribe(item.creator?.id || item.creator?.username)
+                    }
                   />
                 )}
                 pagingEnabled={false}
@@ -311,36 +321,123 @@ function MainScreen() {
             )}
           </>
         ) : currentTab === 'subscriptions' ? (
-          /* Subscriptions Screen with Left/Right Swipe */
+          /* Subscriptions Screen with Left/Right Swipe & Clickable Accounts */
           <View
-            style={[styles.tabPlaceholder, !isDark && styles.tabPlaceholderLight]}
+            style={[styles.subsContainer, !isDark && styles.subsContainerLight]}
             {...tabScreenPanResponder.panHandlers}
           >
-            <Ionicons
-              name="albums-outline"
-              size={68}
-              color="#FF9F0A"
-            />
-            <Text style={[styles.placeholderTitle, !isDark && styles.placeholderTitleLight]}>
-              Subscriptions
-            </Text>
-            <Text style={styles.placeholderSubtitle}>
-              Channels and creators you follow will appear here. Swipe left to Post a Video, or swipe right to return to Loops.
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
-              <TouchableOpacity
-                style={[styles.backToFeedBtn, { backgroundColor: '#333' }]}
-                onPress={goToPrevTab}
-              >
-                <Text style={styles.backToFeedText}>‹ Loops</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.backToFeedBtn, { backgroundColor: '#FF9F0A' }]}
-                onPress={goToNextTab}
-              >
-                <Text style={[styles.backToFeedText, { color: '#000' }]}>Post Video ›</Text>
-              </TouchableOpacity>
+            {/* Header */}
+            <View style={[styles.subsHeader, !isDark && styles.subsHeaderLight]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="albums" size={22} color="#FF9F0A" />
+                <Text style={[styles.subsHeaderTitle, !isDark && styles.subsHeaderTitleLight]}>
+                  Subscriptions
+                </Text>
+              </View>
+              <Text style={styles.subsCountBadge}>
+                {subscribedCreatorIds.size} {subscribedCreatorIds.size === 1 ? 'creator' : 'creators'}
+              </Text>
             </View>
+
+            {subscribedCreatorIds.size === 0 ? (
+              <View style={[styles.tabPlaceholder, !isDark && styles.tabPlaceholderLight]}>
+                <Ionicons name="albums-outline" size={68} color="#FF9F0A" />
+                <Text style={[styles.placeholderTitle, !isDark && styles.placeholderTitleLight]}>
+                  No Subscriptions Yet
+                </Text>
+                <Text style={styles.placeholderSubtitle}>
+                  Tap the red "Subscribe" button next to any creator in the Loops feed to follow their channel and see their loops here!
+                </Text>
+                <TouchableOpacity
+                  style={[styles.backToFeedBtn, { backgroundColor: '#FF9F0A', marginTop: 20 }]}
+                  onPress={() => setCurrentTab('shorts')}
+                >
+                  <Text style={[styles.backToFeedText, { color: '#000000', fontWeight: '800' }]}>
+                    Discover Creators
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+                {Array.from(subscribedCreatorIds).map((creatorIdOrUsername) => {
+                  const creatorVideos = videos.filter(
+                    (v) =>
+                      v.creator?.id === creatorIdOrUsername ||
+                      v.creator?.username === creatorIdOrUsername
+                  );
+                  const firstVideo = creatorVideos[0];
+                  const avatarUrl =
+                    firstVideo?.creator?.avatarUrl ||
+                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200';
+                  const username = firstVideo?.creator?.username || creatorIdOrUsername;
+
+                  return (
+                    <View
+                      key={creatorIdOrUsername}
+                      style={[styles.creatorCard, !isDark && styles.creatorCardLight]}
+                    >
+                      {/* Creator Banner Row */}
+                      <View style={styles.creatorCardHeader}>
+                        <Image source={{ uri: avatarUrl }} style={styles.creatorCardAvatar} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.creatorCardName, !isDark && styles.creatorCardNameLight]}>
+                            {username}
+                          </Text>
+                          <Text style={styles.creatorCardSubtext}>
+                            {creatorVideos.length} {creatorVideos.length === 1 ? 'loop posted' : 'loops posted'}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.unsubscribeSmallBtn}
+                          onPress={() => toggleSubscribe(creatorIdOrUsername)}
+                        >
+                          <Text style={styles.unsubscribeSmallText}>Subscribed ✓</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Video Thumbnails row */}
+                      {creatorVideos.length > 0 ? (
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ gap: 10, marginTop: 12 }}
+                        >
+                          {creatorVideos.map((vid) => {
+                            const originalIdx = videos.findIndex((v) => v.id === vid.id);
+                            return (
+                              <TouchableOpacity
+                                key={vid.id}
+                                style={styles.subVideoThumb}
+                                activeOpacity={0.8}
+                                onPress={() => {
+                                  if (originalIdx !== -1) {
+                                    handleSelectVideoFromProfile(originalIdx);
+                                  }
+                                }}
+                              >
+                                <View style={styles.subVideoThumbPlaceholder}>
+                                  <Ionicons name="play-circle" size={28} color="#FF9F0A" />
+                                </View>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[styles.subVideoThumbTitle, !isDark && styles.subVideoThumbTitleLight]}
+                                >
+                                  {vid.title || 'Untitled Loop'}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </ScrollView>
+                      ) : (
+                        <Text style={[styles.creatorNoVideos, !isDark && styles.creatorNoVideosLight]}>
+                          No public loops uploaded yet.
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
         ) : currentTab === 'upload' ? (
           /* Post New Video Screen with Left/Right Swipe */
@@ -601,5 +698,122 @@ const styles = StyleSheet.create({
   backToFeedText: {
     color: '#FFF',
     fontWeight: '700',
+  },
+  subsContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  subsContainerLight: {
+    backgroundColor: '#FFFFFF',
+  },
+  subsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#222222',
+  },
+  subsHeaderLight: {
+    borderBottomColor: '#E5E5EA',
+  },
+  subsHeaderTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  subsHeaderTitleLight: {
+    color: '#000000',
+  },
+  subsCountBadge: {
+    color: '#FF9F0A',
+    fontSize: 12,
+    fontWeight: '700',
+    backgroundColor: 'rgba(255, 159, 10, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  creatorCard: {
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  creatorCardLight: {
+    backgroundColor: '#F8F9FA',
+    borderColor: '#E5E7EB',
+  },
+  creatorCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  creatorCardAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#FF9F0A',
+  },
+  creatorCardName: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  creatorCardNameLight: {
+    color: '#000000',
+  },
+  creatorCardSubtext: {
+    color: '#8E8E93',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  unsubscribeSmallBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  unsubscribeSmallText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  subVideoThumb: {
+    width: 100,
+    backgroundColor: '#1F1F1F',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  subVideoThumbPlaceholder: {
+    width: 100,
+    height: 130,
+    backgroundColor: '#0F0F0F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subVideoThumbTitle: {
+    color: '#CCCCCC',
+    fontSize: 11,
+    fontWeight: '600',
+    padding: 6,
+  },
+  subVideoThumbTitleLight: {
+    color: '#333333',
+  },
+  creatorNoVideos: {
+    color: '#777777',
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+  creatorNoVideosLight: {
+    color: '#999999',
   },
 });

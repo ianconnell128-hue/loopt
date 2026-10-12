@@ -10,6 +10,7 @@ const VIDEOS_STORAGE_KEY = '@shorts_user_videos_v3';
 const PROFILE_STORAGE_KEY = '@shorts_user_profile_v3';
 const COMMENTS_STORAGE_PREFIX = '@shorts_comments_v3_';
 const SETTINGS_STORAGE_KEY = '@shorts_app_settings_v3';
+const SUBSCRIBED_CREATORS_KEY = '@shorts_subscribed_creators_v1';
 
 const DEFAULT_SETTINGS: AppSettings = {
   isDarkMode: true,
@@ -21,6 +22,7 @@ export function useShorts() {
   const [profile, setProfile] = useState<UserProfile>(USER_DEFAULT_PROFILE);
   const [videos, setVideos] = useState<ShortVideo[]>(INITIAL_VIDEOS);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [subscribedCreatorIds, setSubscribedCreatorIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState<boolean>(true);
 
   // Load Settings
@@ -128,6 +130,7 @@ function shuffleArray<T>(array: T[]): T[] {
   useEffect(() => {
     loadSettings();
     loadProfile();
+    loadSubscriptions();
     loadVideos();
 
     // Auto-poll cloud feed every 30 seconds to catch videos posted by other creators
@@ -191,6 +194,47 @@ function shuffleArray<T>(array: T[]): T[] {
       AsyncStorage.setItem(VIDEOS_STORAGE_KEY, JSON.stringify(updated)).catch(console.error);
       return updated;
     });
+  }, []);
+
+  // Load Subscriptions
+  const loadSubscriptions = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(SUBSCRIBED_CREATORS_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        setSubscribedCreatorIds(new Set(Array.isArray(arr) ? arr : []));
+      }
+    } catch (err) {
+      console.warn('Error loading subscriptions:', err);
+    }
+  }, []);
+
+  // Toggle Subscribe / Unsubscribe for a creator
+  const toggleSubscribe = useCallback(async (creatorIdOrUsername: string) => {
+    if (!creatorIdOrUsername) return;
+    setSubscribedCreatorIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(creatorIdOrUsername)) {
+        next.delete(creatorIdOrUsername);
+      } else {
+        next.add(creatorIdOrUsername);
+      }
+      AsyncStorage.setItem(SUBSCRIBED_CREATORS_KEY, JSON.stringify(Array.from(next))).catch(console.error);
+      return next;
+    });
+
+    // Also update isSubscribed flag on videos in memory
+    setVideos((prev) =>
+      prev.map((v) => {
+        const match =
+          v.creator?.id === creatorIdOrUsername ||
+          v.creator?.username === creatorIdOrUsername;
+        if (match) {
+          return { ...v, isSubscribed: !v.isSubscribed };
+        }
+        return v;
+      })
+    );
   }, []);
 
   // Toggle bookmark / saved video state
@@ -390,6 +434,8 @@ function shuffleArray<T>(array: T[]): T[] {
     addBatchVideos,
     resetAllTestData,
     appendMoreShuffledVideos,
+    subscribedCreatorIds,
+    toggleSubscribe,
 
     refreshVideos: loadVideos,
   };

@@ -27,6 +27,7 @@ export interface ShortVideo {
   isLiked?: boolean;
   isReposted?: boolean;
   isBookmarked?: boolean;
+  isSubscribed?: boolean;
   tags?: string[];
   soundId?: string;
   createdAt?: string;
