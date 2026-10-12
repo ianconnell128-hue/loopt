@@ -128,80 +128,90 @@ export const ShortCard: React.FC<ShortCardProps> = ({
     }
   };
 
-  const handleCardPress = (e?: any) => {
-    const now = Date.now();
-    const DOUBLE_TAP_GAP = 280;
-    const touchX = e?.nativeEvent?.locationX ?? SCREEN_WIDTH / 2;
 
-    if (now - lastTapRef.current < DOUBLE_TAP_GAP) {
-      // Double tap detected: cancel single tap play/pause toggle
-      if (tapTimerRef.current) {
-        clearTimeout(tapTimerRef.current);
-        tapTimerRef.current = null;
-      }
+  // PanResponder handling both taps (single/double) and horizontal swipes
+  const touchStartRef = useRef<{ x: number; y: number; time: number }>({ x: 0, y: 0, time: 0 });
 
-      // Check if double tapped on left side (rewind) or right side (fast forward)
-      if (touchX < SCREEN_WIDTH * 0.3) {
-        // Rewind 5s
-        try {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          const current = player.currentTime || 0;
-          player.seekBy(-5);
-        } catch {}
-      } else if (touchX > SCREEN_WIDTH * 0.7) {
-        // Fast forward 5s
-        try {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          player.seekBy(5);
-        } catch {}
-      } else {
-        // Center double tap: Heart like!
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch {}
-        if (!video.isLiked) {
-          onLike();
-        }
-        triggerHeartAnimation();
-      }
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-      if (tapTimerRef.current) {
-        clearTimeout(tapTimerRef.current);
-      }
-      tapTimerRef.current = setTimeout(() => {
-        togglePlayPause();
-        tapTimerRef.current = null;
-      }, 200);
-    }
-  };
-
-
-  // Horizontal PanResponder for swiping left into Profile or swiping right
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only capture horizontal gestures that exceed vertical motion
         const { dx, dy } = gestureState;
-        return Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.5;
+        return Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy);
       },
-      onPanResponderRelease: (_, gestureState) => {
+      onPanResponderGrant: (evt) => {
+        touchStartRef.current = {
+          x: evt.nativeEvent.pageX,
+          y: evt.nativeEvent.pageY,
+          time: Date.now(),
+        };
+      },
+      onPanResponderRelease: (evt, gestureState) => {
         const { dx, vx } = gestureState;
-        // Swipe Left (dx < -60) -> Open Profile
-        if (dx < -60 || vx < -0.6) {
-          try {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          } catch {}
-          onSwipeLeftToProfile?.();
+        const now = Date.now();
+        const duration = now - touchStartRef.current.time;
+        const distance = Math.sqrt(dx * dx + gestureState.dy * gestureState.dy);
+
+        // Check horizontal swipe
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(gestureState.dy) * 1.2) {
+          if (dx < -40 || vx < -0.4) {
+            // Swipe Left -> Profile
+            try {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            } catch {}
+            onSwipeLeftToProfile?.();
+            return;
+          } else if (dx > 40 || vx > 0.4) {
+            // Swipe Right -> Previous
+            try {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            } catch {}
+            onSwipeRightToPrevious?.();
+            return;
+          }
         }
-        // Swipe Right (dx > 60) -> Go back / previous
-        else if (dx > 60 || vx > 0.6) {
-          try {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          } catch {}
-          onSwipeRightToPrevious?.();
+
+        // Tap handling if no major drag occurred
+        if (distance < 20 && duration < 350) {
+          const DOUBLE_TAP_GAP = 280;
+          const touchX = evt.nativeEvent.locationX;
+
+          if (now - lastTapRef.current < DOUBLE_TAP_GAP) {
+            if (tapTimerRef.current) {
+              clearTimeout(tapTimerRef.current);
+              tapTimerRef.current = null;
+            }
+
+            if (touchX < SCREEN_WIDTH * 0.3) {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                player.seekBy(-5);
+              } catch {}
+            } else if (touchX > SCREEN_WIDTH * 0.7) {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                player.seekBy(5);
+              } catch {}
+            } else {
+              try {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch {}
+              if (!video.isLiked) {
+                onLike();
+              }
+              triggerHeartAnimation();
+            }
+            lastTapRef.current = 0;
+          } else {
+            lastTapRef.current = now;
+            if (tapTimerRef.current) {
+              clearTimeout(tapTimerRef.current);
+            }
+            tapTimerRef.current = setTimeout(() => {
+              togglePlayPause();
+              tapTimerRef.current = null;
+            }, 200);
+          }
         }
       },
     })
@@ -226,11 +236,10 @@ export const ShortCard: React.FC<ShortCardProps> = ({
 
 
   return (
-    <TouchableWithoutFeedback onPress={handleCardPress}>
-      <View
-        style={[styles.container, { height: itemHeight }]}
-        {...panResponder.panHandlers}
-      >
+    <View
+      style={[styles.container, { height: itemHeight }]}
+      {...panResponder.panHandlers}
+    >
         {/* Fullscreen Video View */}
         <VideoView
           style={styles.videoView}
@@ -314,7 +323,6 @@ export const ShortCard: React.FC<ShortCardProps> = ({
           </View>
         </View>
       </View>
-    </TouchableWithoutFeedback>
   );
 };
 

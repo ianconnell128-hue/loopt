@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  PanResponder,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { UserProfile, ShortVideo } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -62,8 +64,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setIsEditOpen(false);
   };
 
+  // Profile PanResponder for swiping right to return to feed
+  const profilePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        // Capture swipe right (dx > 25 and horizontal > vertical)
+        return gesture.dx > 25 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.2;
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx > 45 || gesture.vx > 0.4) {
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          } catch {}
+          onSwipeRightToFeed?.();
+        }
+      },
+    })
+  ).current;
+
   return (
-    <View style={[styles.container, !isDarkMode && styles.containerLight]}>
+    <View
+      style={[styles.container, !isDarkMode && styles.containerLight]}
+      {...profilePanResponder.panHandlers}
+    >
       {/* Top Header */}
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
