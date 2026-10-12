@@ -212,6 +212,14 @@ function shuffleArray<T>(array: T[]): T[] {
   // Toggle Subscribe / Unsubscribe for a creator
   const toggleSubscribe = useCallback(async (creatorIdOrUsername: string) => {
     if (!creatorIdOrUsername) return;
+    // Cannot subscribe to oneself
+    if (
+      creatorIdOrUsername === profile.id ||
+      creatorIdOrUsername === profile.username ||
+      creatorIdOrUsername === `@${profile.username.replace('@', '')}`
+    ) {
+      return;
+    }
     setSubscribedCreatorIds((prev) => {
       const next = new Set(prev);
       if (next.has(creatorIdOrUsername)) {

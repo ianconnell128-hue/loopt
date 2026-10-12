@@ -34,6 +34,7 @@ interface ShortCardProps {
   onSwipeRightToPrevious?: () => void;
   isSubscribed?: boolean;
   onToggleSubscribe?: () => void;
+  isOwnVideo?: boolean;
 }
 
 export const ShortCard: React.FC<ShortCardProps> = ({
@@ -51,6 +52,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
   onSwipeRightToPrevious,
   isSubscribed = false,
   onToggleSubscribe,
+  isOwnVideo = false,
 }) => {
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -317,7 +319,7 @@ export const ShortCard: React.FC<ShortCardProps> = ({
             <Image source={{ uri: video.creator.avatarUrl }} style={styles.avatar} />
             <Text style={styles.username}>{video.creator.username}</Text>
             
-            {onToggleSubscribe && (
+            {!isOwnVideo && onToggleSubscribe ? (
               <TouchableOpacity
                 style={[
                   styles.subscribeBtn,
@@ -340,7 +342,12 @@ export const ShortCard: React.FC<ShortCardProps> = ({
                   {isSubscribed ? 'Subscribed ✓' : 'Subscribe'}
                 </Text>
               </TouchableOpacity>
-            )}
+            ) : isOwnVideo ? (
+              <View style={styles.creatorBadge}>
+                <Ionicons name="sparkles" size={12} color="#FFD60A" />
+                <Text style={styles.creatorBadgeText}>You</Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Title & Caption */}

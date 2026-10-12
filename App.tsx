@@ -295,6 +295,10 @@ function MainScreen() {
                     onToggleSubscribe={() =>
                       toggleSubscribe(item.creator?.id || item.creator?.username)
                     }
+                    isOwnVideo={
+                      (Boolean(profile?.id) && item.creator?.id === profile.id) ||
+                      (Boolean(profile?.username) && item.creator?.username === profile.username)
+                    }
                   />
                 )}
                 pagingEnabled={false}
